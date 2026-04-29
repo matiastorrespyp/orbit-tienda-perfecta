@@ -3,6 +3,13 @@ credenciales/
 .ngrok_token
 .streamlit/secrets.toml
 google-oauth-token.json
+google_sync_config.json
+
+# Archivos de sesion interna
+.claude/
+cache_tp_portafolio/
+historial_gescom/
+debug_tp_compra.txt
 
 # Archivos de datos locales (se generan con el motor)
 output/
