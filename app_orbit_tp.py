@@ -16,13 +16,19 @@ import plotly.graph_objects as go
 from datetime import datetime, timedelta
 
 # ─── Paths ─────────────────────────────────────────────────────────────────────
-BASE    = os.path.dirname(os.path.abspath(__file__))
-ASSETS  = os.path.join(BASE, "assets")
-DATA    = os.path.join(BASE, "output")
-XLSX    = os.path.join(DATA, "Control_TP_Portafolio_PyP.xlsx")
-CSVDIR  = os.path.join(DATA, "APPSHEET")
-CFG     = os.path.join(BASE, "config_app.json")
-LOGO    = os.path.join(ASSETS, "Orbit Tienda Perfecta.png")
+BASE     = os.path.dirname(os.path.abspath(__file__))
+ASSETS   = os.path.join(BASE, "assets")
+DATA     = os.path.join(BASE, "output")
+XLSX     = os.path.join(DATA, "Control_TP_Portafolio_PyP.xlsx")
+CSVDIR   = os.path.join(DATA, "APPSHEET")
+CFG      = os.path.join(BASE, "config_app.json")
+LOGO     = os.path.join(ASSETS, "Orbit Tienda Perfecta.png")
+MARK     = os.path.join(ASSETS, "orbit-mark.png")
+WORDMARK = os.path.join(ASSETS, "orbit-wordmark.png")
+PYP_LOGO = os.path.join(ASSETS, "pyp-logo.png")
+PYP_MARK = os.path.join(ASSETS, "pyp-mark.png")
+CURSOR   = os.path.join(ASSETS, "cursor-dorito.png")
+AUDIO_JS = os.path.join(ASSETS, "audio.js")
 
 # ─── Spanish days ──────────────────────────────────────────────────────────────
 _DIAS_ES = {
@@ -70,379 +76,471 @@ st.set_page_config(
     page_title="Orbit · Tienda Perfecta",
     page_icon="🎯",
     layout="wide",
-    initial_sidebar_state="collapsed",
+    initial_sidebar_state="expanded",
 )
 
-# ─── Logo b64 ──────────────────────────────────────────────────────────────────
-@st.cache_data
-def get_logo_b64():
-    if os.path.exists(LOGO):
-        with open(LOGO, "rb") as f:
+# ─── Logo / asset b64 helpers ──────────────────────────────────────────────────
+def _b64(path):
+    if os.path.exists(path):
+        with open(path, "rb") as f:
             return base64.b64encode(f.read()).decode()
     return ""
 
 @st.cache_data
-def get_company_logo_b64():
-    if os.path.exists(COMPANY_LOGO):
-        with open(COMPANY_LOGO, "rb") as f:
-            return base64.b64encode(f.read()).decode()
+def get_logo_b64():         return _b64(LOGO)
+@st.cache_data
+def get_company_logo_b64(): return _b64(COMPANY_LOGO)
+@st.cache_data
+def get_mark_b64():         return _b64(MARK)
+@st.cache_data
+def get_wordmark_b64():     return _b64(WORDMARK)
+@st.cache_data
+def get_pyp_logo_b64():     return _b64(PYP_LOGO)
+@st.cache_data
+def get_pyp_mark_b64():     return _b64(PYP_MARK)
+@st.cache_data
+def get_cursor_b64():       return _b64(CURSOR)
+@st.cache_data
+def get_audio_js():
+    if os.path.exists(AUDIO_JS):
+        with open(AUDIO_JS, encoding="utf-8") as f:
+            return f.read()
     return ""
+
+
+# ─── Audio crunch injection ────────────────────────────────────────────────────
+def inject_audio():
+    """Inyecta el sistema de sonido WebAudio en la página principal."""
+    import streamlit.components.v1 as components
+    js = get_audio_js()
+    if not js:
+        return
+    components.html(f"""
+    <script>
+    (function() {{
+        if (window.parent.__orbitAudioInstalled) return;
+        window.parent.__orbitAudioInstalled = true;
+        var s = window.parent.document.createElement('script');
+        s.textContent = {repr(js)};
+        window.parent.document.head.appendChild(s);
+    }})();
+    </script>
+    """, height=0, scrolling=False)
 
 
 # ─── CSS ───────────────────────────────────────────────────────────────────────
 def inject_css():
-    st.markdown(f"""
-    <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+    cursor_b64 = get_cursor_b64()
+    if cursor_b64:
+        cur_auto = f"url('data:image/png;base64,{cursor_b64}') 16 4, auto"
+        cur_ptr  = f"url('data:image/png;base64,{cursor_b64}') 16 4, pointer"
+        cur_txt  = f"url('data:image/png;base64,{cursor_b64}') 16 4, text"
+    else:
+        cur_auto, cur_ptr, cur_txt = "auto", "pointer", "text"
 
-    @keyframes glow-pulse {{
-        0%, 100% {{ box-shadow: 0 0 8px rgba(110,197,49,0.15); }}
-        50%       {{ box-shadow: 0 0 22px rgba(110,197,49,0.35); }}
+    st.markdown(f"""
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+    :root {{
+        --bg:         #0A0B0A;
+        --bg-1:       #0E100E;
+        --surface:    #121412;
+        --surface-2:  #181B18;
+        --surface-3:  #1F231F;
+        --line:       #232723;
+        --line-2:     #2F342F;
+        --text:       #F4F6F4;
+        --text-2:     #A8AEA8;
+        --text-3:     #6B716B;
+        --text-4:     #494E49;
+        --green:      #6EC531;
+        --green-2:    #8AD94E;
+        --green-dim:  #4A8A1C;
+        --green-soft: rgba(110,197,49,0.10);
+        --green-line: rgba(110,197,49,0.28);
+        --red:        #E84B4B;
+        --yellow:     #F0C000;
+        --orange:     #E87A00;
     }}
-    @keyframes border-glow {{
-        0%, 100% {{ border-color: rgba(110,197,49,0.25); }}
-        50%       {{ border-color: rgba(110,197,49,0.6); }}
+
+    /* Cursor Dorito */
+    *, *::before, *::after {{ cursor: {cur_auto} !important; }}
+    a, button, [role="button"], .clickable, label[for], summary {{ cursor: {cur_ptr} !important; }}
+    input[type="text"], input[type="password"], input[type="search"], textarea {{ cursor: {cur_txt} !important; }}
+
+    /* Base */
+    html, body, [class*="css"] {{
+        font-family: 'Geist', -apple-system, BlinkMacSystemFont, system-ui, sans-serif !important;
+        background-color: var(--bg) !important;
+        color: var(--text) !important;
+        -webkit-font-smoothing: antialiased !important;
+        font-feature-settings: "ss01", "cv11";
+    }}
+    .stApp {{ background-color: var(--bg); }}
+    #MainMenu, footer, header {{ visibility: hidden; }}
+    .block-container {{ padding-top: 0 !important; padding-bottom: 0 !important; max-width: 1400px; }}
+
+    /* Ambient grid */
+    .stApp::before {{
+        content: '';
+        position: fixed; inset: 0; pointer-events: none; z-index: 0;
+        background-image:
+            linear-gradient(rgba(110,197,49,0.022) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(110,197,49,0.022) 1px, transparent 1px);
+        background-size: 64px 64px;
+        mask-image: radial-gradient(ellipse 80% 60% at 30% 20%, #000 30%, transparent 80%);
+    }}
+
+    /* Scrollbar */
+    ::-webkit-scrollbar {{ width: 10px; height: 10px; }}
+    ::-webkit-scrollbar-track {{ background: transparent; }}
+    ::-webkit-scrollbar-thumb {{ background: var(--surface-3); border-radius: 8px; border: 2px solid var(--bg); }}
+    ::-webkit-scrollbar-thumb:hover {{ background: var(--line-2); }}
+
+    /* ── Animations ──────────────────────────────────────────────── */
+    @keyframes floaty {{
+        0%, 100% {{ transform: translateY(0) rotate(0deg); }}
+        50%       {{ transform: translateY(-8px) rotate(6deg); }}
+    }}
+    @keyframes launch {{
+        0%   {{ transform: rotate(0) scale(1); filter: drop-shadow(0 0 28px rgba(110,197,49,0.55)); }}
+        35%  {{ transform: rotate(-30deg) scale(0.9); }}
+        70%  {{ transform: rotate(720deg) scale(1.4); filter: drop-shadow(0 0 60px rgba(110,197,49,1)); }}
+        100% {{ transform: rotate(1080deg) scale(0.4); opacity: 0; filter: drop-shadow(0 0 80px rgba(110,197,49,0.9)); }}
+    }}
+    @keyframes shake {{
+        10%, 90% {{ transform: translateX(-2px); }}
+        20%, 80% {{ transform: translateX(4px); }}
+        30%, 50%, 70% {{ transform: translateX(-7px); }}
+        40%, 60% {{ transform: translateX(7px); }}
     }}
     @keyframes fade-in {{
-        from {{ opacity:0; transform:translateY(8px); }}
-        to   {{ opacity:1; transform:translateY(0); }}
+        from {{ opacity: 0; transform: translateY(6px); }}
+        to   {{ opacity: 1; transform: translateY(0); }}
     }}
-    @keyframes shimmer {{
-        0%   {{ background-position: -400px 0; }}
-        100% {{ background-position: 400px 0; }}
+    @keyframes liveDot {{
+        0%, 100% {{ box-shadow: 0 0 6px rgba(110,197,49,0.7); }}
+        50%       {{ box-shadow: 0 0 14px rgba(110,197,49,1), 0 0 22px rgba(110,197,49,0.45); }}
+    }}
+    .live-dot {{ animation: liveDot 2.4s ease-in-out infinite; }}
+    .orbit-mark-spin {{ animation: floaty 5.5s ease-in-out infinite; }}
+    .orbit-mark-launch {{ animation: launch 1.1s cubic-bezier(.4,0,.2,1) forwards !important; animation-duration: 1.1s !important; }}
+
+    /* ── Sidebar ──────────────────────────────────────────────────── */
+    [data-testid="stSidebar"] {{
+        background: var(--bg-1) !important;
+        border-right: 1px solid var(--line) !important;
+        min-width: 236px !important;
+        max-width: 236px !important;
+    }}
+    [data-testid="stSidebar"] > div {{
+        padding: 0 !important;
+        gap: 0 !important;
+        overflow-x: hidden !important;
+    }}
+    [data-testid="stSidebarCollapseButton"],
+    button[data-testid="collapsedControl"] {{ display: none !important; }}
+    [data-testid="stSidebar"] .stButton > button {{
+        background: transparent !important;
+        color: var(--text-2) !important;
+        border: none !important;
+        border-radius: 7px !important;
+        padding: 8px 10px !important;
+        font-size: 13px !important;
+        font-weight: 500 !important;
+        width: 100% !important;
+        text-align: left !important;
+        justify-content: flex-start !important;
+        box-shadow: none !important;
+        transform: none !important;
+        letter-spacing: 0.1px !important;
+        transition: background .18s, color .18s, transform .22s cubic-bezier(.2,.8,.2,1) !important;
+    }}
+    [data-testid="stSidebar"] .stButton > button:hover {{
+        background: rgba(255,255,255,0.025) !important;
+        color: var(--text) !important;
+        transform: translateX(2px) !important;
+        box-shadow: none !important;
+    }}
+    /* Active nav item */
+    [data-testid="stSidebar"] .stButton > button[kind="primary"] {{
+        background: var(--surface-2) !important;
+        color: var(--text) !important;
+        border-left: 2px solid var(--green) !important;
+        border-radius: 7px !important;
+        padding-left: 8px !important;
+    }}
+    /* Sidebar icon footer buttons */
+    [data-testid="stSidebar"] .sidebar-icon-btn .stButton > button {{
+        width: 30px !important;
+        height: 30px !important;
+        padding: 0 !important;
+        border: 1px solid var(--line) !important;
+        border-radius: 7px !important;
+        font-size: 13px !important;
+        display: grid !important;
+        place-items: center !important;
+        justify-content: center !important;
+    }}
+    [data-testid="stSidebar"] .sidebar-icon-btn .stButton > button:hover {{
+        border-color: var(--green-line) !important;
+        color: var(--green) !important;
+        background: var(--green-soft) !important;
+        transform: translateY(-2px) !important;
+        box-shadow: 0 4px 12px rgba(110,197,49,0.18) !important;
     }}
 
-    html, body, [class*="css"] {{
-        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
-        background-color: {BLACK} !important;
-        color: {WHITE};
+    /* ── Top bar ──────────────────────────────────────────────────── */
+    .orbit-topbar {{
+        display: flex; align-items: center; gap: 16px;
+        padding: 18px 32px; margin: 0 -4rem 1.4rem -4rem;
+        border-bottom: 1px solid var(--line);
+        background: rgba(10,11,10,0.9);
+        backdrop-filter: blur(10px);
+        position: sticky; top: 0; z-index: 4;
+        animation: fade-in 0.3s ease;
     }}
-    .stApp {{ background-color: {BLACK}; animation: fade-in 0.4s ease; }}
-    #MainMenu, footer, header {{ visibility: hidden; }}
-    .block-container {{ padding-top: 0 !important; padding-bottom: 0; max-width: 1440px; }}
+    .period-chip {{
+        display: flex; align-items: center; gap: 8px;
+        padding: 6px 11px 6px 8px; border: 1px solid var(--line);
+        border-radius: 99px; font-size: 12px; cursor: default;
+        transition: border-color .22s;
+    }}
+    .period-chip:hover {{ border-color: var(--green-line); }}
 
-    /* ── Executive header bar ─────────────────────────────────────── */
-    .orbit-header-bar {{
-        background: linear-gradient(135deg, #0C1A02 0%, #131a08 40%, #101208 70%, #0A0A0A 100%);
-        border-bottom: 1px solid rgba(110,197,49,0.28);
-        padding: 0.85rem 1.6rem;
-        margin: 0 -4rem 1.4rem -4rem;
-        display: flex;
-        align-items: center;
-        gap: 1.2rem;
-        position: relative;
-        box-shadow: 0 4px 32px rgba(0,0,0,0.6), 0 1px 0 rgba(110,197,49,0.15);
-    }}
-    .orbit-header-bar::after {{
-        content: '';
-        position: absolute;
-        bottom: 0; left: 0; right: 0;
-        height: 1px;
-        background: linear-gradient(90deg,
-            transparent 0%, rgba(110,197,49,0.5) 30%,
-            rgba(110,197,49,0.8) 50%, rgba(110,197,49,0.5) 70%,
-            transparent 100%);
-    }}
-    .orbit-header-logo {{
-        height: 58px;
-        width: auto;
-        filter: brightness(1.55) drop-shadow(0 0 10px rgba(110,197,49,0.55));
-        transition: filter 0.3s ease;
-        flex-shrink: 0;
-    }}
-    .orbit-header-logo:hover {{
-        filter: brightness(1.8) drop-shadow(0 0 16px rgba(110,197,49,0.8));
-    }}
-    .orbit-clogo {{
-        height: 48px;
-        width: auto;
-        flex-shrink: 0;
-        opacity: 0.85;
-        filter: drop-shadow(0 2px 6px rgba(0,0,0,0.4));
-        transition: opacity 0.3s ease;
-    }}
-    .orbit-clogo:hover {{ opacity: 1; }}
-    .orbit-header-subtitle {{
-        font-size: 0.72rem;
-        font-weight: 600;
-        color: rgba(110,197,49,0.65);
-        text-transform: uppercase;
-        letter-spacing: 2.5px;
-        flex: 1;
-    }}
-
-    /* ── Slim header action buttons ───────────────────────────────── */
-    .orbit-action-row {{
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        flex-shrink: 0;
-    }}
-    .orbit-btn-slim {{
-        background: transparent;
-        border: 1px solid #2A2A2A;
-        color: #666;
-        border-radius: 20px;
-        padding: 0.28rem 0.9rem;
-        font-size: 0.75rem;
-        font-weight: 500;
+    /* ── KPI hero cards (clickable) ───────────────────────────────── */
+    .kpi-card {{
+        position: relative; overflow: hidden;
+        border: 1px solid var(--line); border-radius: 12px;
+        background: var(--surface); padding: 20px;
         cursor: pointer;
-        transition: all 0.22s ease;
-        font-family: 'Inter', sans-serif;
-        letter-spacing: 0.3px;
-        white-space: nowrap;
+        transition: transform .35s cubic-bezier(.2,.8,.2,1), border-color .25s, box-shadow .35s !important;
     }}
-    .orbit-btn-slim:hover {{
-        border-color: {GREEN};
-        color: {GREEN};
-        background: rgba(110,197,49,0.07);
-        box-shadow: 0 0 12px rgba(110,197,49,0.2);
-        transform: translateY(-1px);
+    .kpi-card:hover {{
+        transform: translateY(-3px) !important;
+        border-color: var(--green-line) !important;
+        box-shadow: 0 10px 32px rgba(0,0,0,0.45), 0 0 0 1px rgba(110,197,49,0.08) !important;
     }}
-    .orbit-btn-exit {{
-        border-color: #2A2A2A;
-        color: #555;
+    .kpi-card::before {{
+        content: ''; position: absolute; inset: 0;
+        background: radial-gradient(120% 100% at 50% 0%, rgba(110,197,49,0.08), transparent 60%);
+        opacity: 0; transition: opacity .35s; pointer-events: none;
     }}
-    .orbit-btn-exit:hover {{
-        border-color: {RED};
-        color: {RED};
-        background: rgba(232,75,75,0.07);
-        box-shadow: 0 0 12px rgba(232,75,75,0.2);
+    .kpi-card:hover::before {{ opacity: 1; }}
+    .kpi-card.active {{
+        border-color: rgba(110,197,49,0.5) !important;
+        box-shadow: 0 0 0 1px rgba(110,197,49,0.2) !important;
+    }}
+    /* Invisible overlay button that sits on top of each kpi-card */
+    .element-container:has(.kpi-port) + .element-container .stButton > button,
+    .element-container:has(.kpi-tp)   + .element-container .stButton > button,
+    .element-container:has(.kpi-oport)+ .element-container .stButton > button,
+    .element-container:has(.kpi-crit) + .element-container .stButton > button {{
+        background: transparent !important; border: none !important;
+        box-shadow: none !important; outline: none !important;
+        width: 100% !important; min-height: 120px !important;
+        margin-top: -124px !important;
+        opacity: 0 !important; cursor: pointer !important;
+        position: relative !important; z-index: 100 !important; padding: 0 !important;
     }}
 
-    /* ── Default buttons — slim/subtle (header actions, etc.) ───── */
+    /* ── Default buttons ──────────────────────────────────────────── */
     .stButton > button {{
-        background: transparent;
-        color: #777;
-        border: 1px solid #2A2A2A;
-        border-radius: 20px;
-        padding: 0.28rem 0.85rem;
-        font-size: 0.75rem;
-        font-weight: 500;
-        font-family: 'Inter', sans-serif;
-        letter-spacing: 0.3px;
-        transition: all 0.22s ease;
-        white-space: nowrap;
+        background: transparent !important;
+        color: var(--text-3) !important;
+        border: 1px solid var(--line) !important;
+        border-radius: 7px !important;
+        padding: 0.3rem 0.9rem !important;
+        font-size: 13px !important;
+        font-weight: 500 !important;
+        font-family: 'Geist', sans-serif !important;
+        letter-spacing: 0.2px !important;
+        transition: all 0.22s ease !important;
+        white-space: nowrap !important;
     }}
     .stButton > button:hover {{
-        border-color: {GREEN};
-        color: {GREEN};
-        background: rgba(110,197,49,0.07);
-        box-shadow: 0 0 12px rgba(110,197,49,0.2);
-        transform: translateY(-2px);
+        border-color: var(--green-line) !important;
+        color: var(--green) !important;
+        background: var(--green-soft) !important;
+        box-shadow: 0 0 12px rgba(110,197,49,0.18) !important;
+        transform: translateY(-1px) !important;
     }}
-    .stButton > button:active {{ transform: translateY(0); }}
+    .stButton > button:active {{ transform: translateY(0) !important; }}
 
-    /* ── INGRESAR button (login only) ────────────────────────────── */
+    /* ── Login INGRESAR button ────────────────────────────────────── */
     .login-btn .stButton > button {{
-        background: linear-gradient(135deg, {GREEN} 0%, {DGREEN} 100%);
-        color: {BLACK};
-        font-weight: 800;
-        font-size: 0.9rem;
-        letter-spacing: 1.5px;
-        border: none;
-        border-radius: 10px;
-        padding: 0.7rem 2rem;
-        width: 100%;
-        transition: all 0.25s cubic-bezier(.4,0,.2,1);
-        text-transform: uppercase;
-        position: relative;
-        overflow: hidden;
+        background: linear-gradient(135deg, var(--green) 0%, var(--green-dim) 100%) !important;
+        color: #0A0B0A !important;
+        font-weight: 700 !important;
+        font-size: 13px !important;
+        letter-spacing: 1.5px !important;
+        text-transform: uppercase !important;
+        border: none !important;
+        border-radius: 10px !important;
+        padding: 14px !important;
+        width: 100% !important;
+        box-shadow: 0 6px 20px rgba(110,197,49,0.28) !important;
+        transition: all .25s cubic-bezier(.2,.8,.2,1) !important;
     }}
-    .login-btn .stButton > button::before {{
-        content: '';
-        position: absolute;
-        top: 0; left: -100%;
-        width: 100%; height: 100%;
-        background: linear-gradient(90deg, transparent,
-            rgba(255,255,255,0.12), transparent);
-        transition: left 0.4s ease;
-    }}
-    .login-btn .stButton > button:hover::before {{ left: 100%; }}
     .login-btn .stButton > button:hover {{
-        background: linear-gradient(135deg, #7ED348 0%, {GREEN} 100%);
-        transform: translateY(-3px);
-        box-shadow: 0 8px 28px rgba(110,197,49,0.4),
-                    0 2px 8px rgba(110,197,49,0.2);
+        transform: translateY(-2px) !important;
+        filter: brightness(1.08) !important;
+        box-shadow: 0 12px 32px rgba(110,197,49,0.45) !important;
     }}
-    .login-btn .stButton > button:active {{ transform: translateY(-1px); }}
+    .login-btn .stButton > button:active {{ transform: translateY(0) scale(0.98) !important; }}
 
     /* ── Inputs ───────────────────────────────────────────────────── */
     .stTextInput > div > div > input {{
-        background-color: #141414 !important;
-        color: {WHITE} !important;
-        border: 1.5px solid #252525 !important;
-        border-radius: 10px !important;
-        font-size: 1rem !important;
-        transition: border-color 0.2s, box-shadow 0.2s !important;
+        background-color: #101210 !important;
+        color: var(--text) !important;
+        border: 1.5px solid var(--line) !important;
+        border-radius: 9px !important;
+        font-size: 14px !important;
+        font-family: inherit !important;
+        transition: border-color .2s, box-shadow .2s !important;
     }}
     .stTextInput > div > div > input:focus {{
-        border-color: {GREEN} !important;
-        box-shadow: 0 0 0 3px rgba(110,197,49,0.15) !important;
+        border-color: var(--green-line) !important;
+        box-shadow: 0 0 0 3px rgba(110,197,49,0.10) !important;
     }}
     .stSelectbox > div > div {{
-        background-color: #141414 !important;
-        color: {WHITE} !important;
-        border: 1.5px solid #252525 !important;
-        border-radius: 10px !important;
+        background-color: #101210 !important;
+        color: var(--text) !important;
+        border: 1.5px solid var(--line) !important;
+        border-radius: 9px !important;
     }}
     .stSelectbox label, .stTextInput label {{
-        color: {GRAY} !important;
-        font-size: 0.75rem !important;
-        text-transform: uppercase;
-        letter-spacing: 1.2px;
-        font-weight: 700;
-    }}
-
-    /* ── Metrics ──────────────────────────────────────────────────── */
-    [data-testid="stMetricValue"] {{
-        font-size: 2rem !important;
-        font-weight: 800 !important;
-        color: {WHITE} !important;
-    }}
-    [data-testid="stMetricLabel"] {{
-        color: {GRAY} !important;
-        font-size: 0.7rem !important;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-        font-weight: 700;
+        color: var(--text-3) !important;
+        font-size: 10.5px !important;
+        text-transform: uppercase !important;
+        letter-spacing: 1.4px !important;
+        font-weight: 600 !important;
     }}
 
     /* ── Tabs ─────────────────────────────────────────────────────── */
     .stTabs [data-baseweb="tab-list"] {{
-        background-color: #111;
-        border-radius: 12px;
-        padding: 4px;
-        gap: 3px;
-        border: 1px solid {BORDER};
+        background-color: var(--surface);
+        border-radius: 9px; padding: 3px; gap: 2px;
+        border: 1px solid var(--line);
     }}
     .stTabs [data-baseweb="tab"] {{
-        background-color: transparent;
-        color: {GRAY};
-        border-radius: 9px;
-        font-weight: 600;
-        font-size: 0.83rem;
-        padding: 0.48rem 1.1rem;
-        border: none;
-        transition: color 0.2s;
+        background-color: transparent; color: var(--text-3);
+        border-radius: 7px; font-weight: 500; font-size: 13px;
+        padding: 0.45rem 1rem; border: none; transition: color 0.2s;
     }}
-    .stTabs [data-baseweb="tab"]:hover {{ color: {LGRAY}; }}
+    .stTabs [data-baseweb="tab"]:hover {{ color: var(--text); }}
     .stTabs [aria-selected="true"] {{
-        background: linear-gradient(135deg, {GREEN}, {DGREEN}) !important;
-        color: {BLACK} !important;
-        box-shadow: 0 2px 10px rgba(110,197,49,0.3);
+        background: linear-gradient(135deg, var(--green), var(--green-dim)) !important;
+        color: #0A0B0A !important;
+        box-shadow: 0 2px 10px rgba(110,197,49,0.3) !important;
     }}
 
     /* ── Expanders ────────────────────────────────────────────────── */
     details {{
-        background: {CARD} !important;
-        border: 1px solid {BORDER} !important;
+        background: var(--surface) !important;
+        border: 1px solid var(--line) !important;
         border-radius: 10px !important;
         margin-bottom: 0.4rem !important;
-        transition: border-color 0.2s, box-shadow 0.2s !important;
+        transition: border-color 0.2s !important;
     }}
-    details:hover {{
-        border-color: rgba(110,197,49,0.3) !important;
-        box-shadow: 0 2px 16px rgba(110,197,49,0.06) !important;
-    }}
+    details:hover {{ border-color: var(--green-line) !important; }}
     details summary {{
-        color: {WHITE} !important;
-        font-weight: 600 !important;
-        padding: 0.7rem 1rem !important;
-        cursor: pointer;
-        transition: color 0.2s;
+        color: var(--text) !important; font-weight: 600 !important;
+        padding: 0.7rem 1rem !important; cursor: pointer; transition: color 0.2s;
     }}
-    details summary:hover {{ color: {GREEN} !important; }}
-    details[open] summary {{ border-bottom: 1px solid {BORDER}; color: {GREEN} !important; }}
+    details summary:hover {{ color: var(--green) !important; }}
+    details[open] summary {{ border-bottom: 1px solid var(--line); color: var(--green) !important; }}
     details > div {{ padding: 0.8rem 1rem !important; }}
 
-    /* ── Orbit cards ──────────────────────────────────────────────── */
+    /* ── Orbit data cards ─────────────────────────────────────────── */
     .ocard {{
-        background: {CARD};
-        border: 1px solid {BORDER};
-        border-radius: 14px;
-        padding: 1.2rem 1.4rem;
-        margin-bottom: 0.7rem;
+        background: var(--surface); border: 1px solid var(--line);
+        border-radius: 12px; padding: 1.2rem 1.4rem; margin-bottom: 0.7rem;
         transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
         animation: fade-in 0.35s ease;
     }}
     .ocard:hover {{
-        transform: translateY(-3px);
-        box-shadow: 0 8px 28px rgba(110,197,49,0.1);
-        border-color: rgba(110,197,49,0.25) !important;
+        transform: translateY(-2px);
+        box-shadow: 0 8px 28px rgba(0,0,0,0.35);
+        border-color: var(--green-line) !important;
     }}
-    .ocard-green  {{ border-left: 4px solid {GREEN} !important; }}
-    .ocard-yellow {{ border-left: 4px solid {YELLOW} !important; }}
-    .ocard-orange {{ border-left: 4px solid {ORANGE} !important; }}
-    .ocard-red    {{ border-left: 4px solid {RED} !important; }}
+    .ocard-green  {{ border-left: 3px solid var(--green) !important; }}
+    .ocard-yellow {{ border-left: 3px solid var(--yellow) !important; }}
+    .ocard-orange {{ border-left: 3px solid var(--orange) !important; }}
+    .ocard-red    {{ border-left: 3px solid var(--red) !important; }}
+
+    /* ── Row hover ────────────────────────────────────────────────── */
+    .row-hover {{ transition: background .18s, transform .22s cubic-bezier(.2,.8,.2,1) !important; }}
+    .row-hover:hover {{
+        background: rgba(110,197,49,0.04) !important;
+        transform: translateX(2px) !important;
+    }}
 
     /* ── Section label ────────────────────────────────────────────── */
     .section-label {{
-        font-size: 0.68rem;
-        font-weight: 700;
-        color: rgba(110,197,49,0.55);
-        text-transform: uppercase;
-        letter-spacing: 2.5px;
-        margin: 1.4rem 0 0.7rem 0;
-        padding-bottom: 0.4rem;
-        border-bottom: 1px solid {BORDER};
+        font-size: 10.5px; font-weight: 600; color: var(--text-3);
+        text-transform: uppercase; letter-spacing: 1.5px;
+        margin: 1.4rem 0 0.7rem 0; padding-bottom: 0.4rem;
+        border-bottom: 1px solid var(--line);
+    }}
+
+    /* ── Mono numbers ─────────────────────────────────────────────── */
+    .num {{ font-family: 'JetBrains Mono', monospace !important; font-feature-settings: "tnum" !important; }}
+
+    /* ── Metrics ──────────────────────────────────────────────────── */
+    [data-testid="stMetricValue"] {{
+        font-family: 'JetBrains Mono', monospace !important;
+        font-size: 2rem !important; font-weight: 600 !important;
+        color: var(--text) !important;
+    }}
+    [data-testid="stMetricLabel"] {{
+        color: var(--text-3) !important; font-size: 10.5px !important;
+        text-transform: uppercase !important; letter-spacing: 1.2px !important;
+        font-weight: 600 !important;
     }}
 
     /* ── Footer ───────────────────────────────────────────────────── */
     .orbit-footer {{
-        text-align: center;
-        color: #2E2E2E;
-        font-size: 0.7rem;
-        padding: 2rem 0 0.5rem 0;
-        margin-top: 2rem;
-        border-top: 1px solid {BORDER};
-        letter-spacing: 1px;
+        text-align: center; color: var(--text-4); font-size: 10px;
+        padding: 2rem 0 0.5rem 0; margin-top: 2rem;
+        border-top: 1px solid var(--line); letter-spacing: 1px;
     }}
 
     /* ── SKU pills ────────────────────────────────────────────────── */
-    .sku-g {{
-        display: inline-block; background: #0F1F00; color: {GREEN};
-        border: 1px solid {GREEN}55; border-radius: 20px;
-        padding: 0.2rem 0.65rem; font-size: 0.75rem; margin: 2px;
-        transition: all 0.18s ease; cursor: default;
-    }}
-    .sku-g:hover {{ background: rgba(110,197,49,0.15); transform: scale(1.04);
-                   box-shadow: 0 2px 8px rgba(110,197,49,0.2); }}
-    .sku-o {{
-        display: inline-block; background: #1F0F00; color: {ORANGE};
-        border: 1px solid {ORANGE}55; border-radius: 20px;
-        padding: 0.2rem 0.65rem; font-size: 0.75rem; margin: 2px;
-        transition: all 0.18s ease; cursor: default;
-    }}
-    .sku-o:hover {{ background: rgba(232,122,0,0.15); transform: scale(1.04); }}
-    .sku-d {{
-        display: inline-block; background: #1A1A1A; color: {GRAY};
-        border: 1px solid {BORDER}; border-radius: 20px;
-        padding: 0.2rem 0.65rem; font-size: 0.75rem; margin: 2px;
-        transition: all 0.18s ease; cursor: default;
-    }}
-    .sku-d:hover {{ background: #222; color: {LGRAY}; }}
+    .sku-g {{ display:inline-block; background:#0F1F00; color:var(--green);
+              border:1px solid rgba(110,197,49,0.33); border-radius:20px;
+              padding:0.2rem 0.65rem; font-size:12px; margin:2px;
+              transition:all 0.18s ease; cursor:default; }}
+    .sku-g:hover {{ background:rgba(110,197,49,0.15); transform:scale(1.04); }}
+    .sku-o {{ display:inline-block; background:#1F0F00; color:var(--orange);
+              border:1px solid rgba(232,122,0,0.33); border-radius:20px;
+              padding:0.2rem 0.65rem; font-size:12px; margin:2px; cursor:default; }}
+    .sku-d {{ display:inline-block; background:var(--surface-3); color:var(--text-3);
+              border:1px solid var(--line); border-radius:20px;
+              padding:0.2rem 0.65rem; font-size:12px; margin:2px; cursor:default; }}
 
     /* ── Badges ───────────────────────────────────────────────────── */
-    .bdg-g {{ display:inline-block; background:rgba(110,197,49,0.12); color:{GREEN};
-               border:1px solid {GREEN}44; border-radius:20px; padding:0.12rem 0.7rem;
-               font-size:0.72rem; font-weight:700; }}
-    .bdg-r {{ display:inline-block; background:rgba(232,75,75,0.12); color:{RED};
-               border:1px solid {RED}44; border-radius:20px; padding:0.12rem 0.7rem;
-               font-size:0.72rem; font-weight:700; }}
-    .bdg-y {{ display:inline-block; background:rgba(240,192,0,0.12); color:{YELLOW};
-               border:1px solid {YELLOW}44; border-radius:20px; padding:0.12rem 0.7rem;
-               font-size:0.72rem; font-weight:700; }}
-    .bdg-o {{ display:inline-block; background:rgba(232,122,0,0.12); color:{ORANGE};
-               border:1px solid {ORANGE}44; border-radius:20px; padding:0.12rem 0.7rem;
-               font-size:0.72rem; font-weight:700; }}
+    .bdg-g {{ display:inline-block; background:rgba(110,197,49,0.12); color:var(--green);
+               border:1px solid rgba(110,197,49,0.27); border-radius:20px;
+               padding:0.12rem 0.7rem; font-size:11px; font-weight:700; }}
+    .bdg-r {{ display:inline-block; background:rgba(232,75,75,0.12); color:var(--red);
+               border:1px solid rgba(232,75,75,0.27); border-radius:20px;
+               padding:0.12rem 0.7rem; font-size:11px; font-weight:700; }}
+    .bdg-y {{ display:inline-block; background:rgba(240,192,0,0.12); color:var(--yellow);
+               border:1px solid rgba(240,192,0,0.27); border-radius:20px;
+               padding:0.12rem 0.7rem; font-size:11px; font-weight:700; }}
+    .bdg-o {{ display:inline-block; background:rgba(232,122,0,0.12); color:var(--orange);
+               border:1px solid rgba(232,122,0,0.27); border-radius:20px;
+               padding:0.12rem 0.7rem; font-size:11px; font-weight:700; }}
 
-    /* ── Divider ──────────────────────────────────────────────────── */
-    hr {{ border-color: {BORDER} !important; margin: 0.6rem 0 1rem 0 !important; }}
+    /* ── HR / divider ─────────────────────────────────────────────── */
+    hr {{ border-color: var(--line) !important; margin: 0.6rem 0 1rem 0 !important; }}
 
     /* ── Progress ─────────────────────────────────────────────────── */
     .stProgress > div > div > div > div {{
-        background: linear-gradient(90deg, {GREEN}, {DGREEN});
+        background: linear-gradient(90deg, var(--green), var(--green-dim));
     }}
     </style>
     """, unsafe_allow_html=True)
@@ -592,12 +690,17 @@ def progress_bar_html(pct, color, height="8px"):
                     height:100%;border-radius:20px;transition:width 0.8s ease'></div>
     </div>"""
 
-def kpi_card_html(label, value, sub, color):
+def kpi_card_html(label, value, sub, color, card_class="", is_active=False):
+    """KPI hero card — estilo referencia con top accent bar y mono numbers."""
+    active_style = f"border-color:rgba(110,197,49,0.5);box-shadow:0 0 0 1px rgba(110,197,49,0.2);" if is_active else ""
     return f"""
-    <div class='ocard' style='text-align:center;border-color:{color}80;border-top:3px solid {color}'>
-        <div style='color:{GRAY};font-size:0.65rem;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:0.3rem'>{label}</div>
-        <div style='font-size:2.4rem;font-weight:900;color:{color};line-height:1.1'>{value}</div>
-        <div style='color:{GRAY};font-size:0.75rem;margin-top:0.2rem'>{sub}</div>
+    <div class='kpi-card {card_class}'
+         style='border-top:2px solid {color};{active_style}'>
+        <div style='font-size:11px;color:var(--text-3);letter-spacing:1.2px;
+                    text-transform:uppercase;font-weight:500;margin-bottom:12px'>{label}</div>
+        <div class='num' style='font-size:30px;font-weight:600;letter-spacing:-0.5px;
+                                 line-height:1;margin-bottom:8px;color:{color}'>{value}</div>
+        <div style='color:var(--text-3);font-size:12px'>{sub}</div>
     </div>"""
 
 def sku_pills(lst, css_class="sku-g"):
@@ -611,46 +714,141 @@ def orbit_footer():
     st.markdown("<div class='orbit-footer'>Orbit © 2026 · Propiedad de Torres Matías</div>",
                 unsafe_allow_html=True)
 
-def page_header(subtitle, show_logout=True, logout_key="logout"):
-    logo_b64    = get_logo_b64()
-    clogo_b64   = get_company_logo_b64()
+def render_sidebar(role="gerencia", vendor_name="Matías Torres"):
+    """Sidebar fija estilo referencia — branding + nav + footer."""
+    mark_b64     = get_mark_b64()
+    wordmark_b64 = get_wordmark_b64()
+    pyp_mark_b64 = get_pyp_mark_b64()
+    nav_page     = st.session_state.get("nav_page", "resumen")
 
-    orbit_html = (
-        f"<img src='data:image/png;base64,{logo_b64}' class='orbit-header-logo' />"
-        if logo_b64 else
-        "<span style='font-size:1.6rem;font-weight:900;color:#6EC531;letter-spacing:2px'>ORBIT</span>"
-    )
-    clogo_html = (
-        f"<img src='data:image/png;base64,{clogo_b64}' class='orbit-clogo' />"
-        if clogo_b64 else ""
-    )
+    with st.sidebar:
+        # ── Brand block ──────────────────────────────────────────────
+        mark_img = (f"<img src='data:image/png;base64,{mark_b64}'"
+                    f" style='width:40px;height:40px;filter:drop-shadow(0 0 12px rgba(110,197,49,0.4));transition:transform .9s cubic-bezier(.2,.8,.2,1)'/>"
+                    if mark_b64 else "🎯")
+        wm_img   = (f"<img src='data:image/png;base64,{wordmark_b64}'"
+                    f" style='height:26px;width:auto;filter:brightness(1.1);flex-shrink:0'/>"
+                    if wordmark_b64 else "<span style='font-size:13px;font-weight:700;color:var(--text)'>ORBIT · TP</span>")
+        pyp_img  = (f"<img src='data:image/png;base64,{pyp_mark_b64}'"
+                    f" style='height:24px;width:auto;filter:drop-shadow(0 0 8px rgba(56,110,255,0.5)) brightness(1.15)'/>"
+                    if pyp_mark_b64 else "")
 
-    st.markdown(f"""
-    <div class="orbit-header-bar">
-        {orbit_html}
-        <div style='display:flex;flex-direction:column;flex:1;min-width:0'>
-            <div style='font-size:1.05rem;font-weight:800;color:#FFFFFF;letter-spacing:1px'>
-                ORBIT · TIENDA PERFECTA
-            </div>
-            <div class="orbit-header-subtitle">{subtitle}</div>
+        st.markdown(f"""
+        <div style='padding:18px 16px 14px;display:flex;align-items:center;gap:10px;
+                    border-bottom:1px solid var(--line)'>
+            {mark_img}
+            {wm_img}
+            <div style='width:1px;height:24px;background:var(--line);margin:0 2px'></div>
+            {pyp_img}
         </div>
-        {clogo_html}
+        """, unsafe_allow_html=True)
+
+        # ── User card ────────────────────────────────────────────────
+        initials   = vendor_name[:2].upper() if vendor_name else "MT"
+        role_label = "Gerencia comercial" if role == "gerencia" else "Vendedor/a"
+        st.markdown(f"""
+        <div style='margin:6px 12px 12px;padding:10px 11px;border:1px solid var(--line);
+                    border-radius:9px;background:var(--surface);
+                    display:flex;align-items:center;gap:9px'>
+            <div style='width:28px;height:28px;border-radius:6px;background:#1E2A14;
+                        display:grid;place-items:center;color:var(--green);
+                        font-weight:600;font-size:12px;flex-shrink:0'>{initials}</div>
+            <div style='flex:1;min-width:0;overflow:hidden'>
+                <div style='font-size:12px;font-weight:500;color:var(--text);
+                            white-space:nowrap;overflow:hidden;text-overflow:ellipsis'>{vendor_name}</div>
+                <div style='font-size:10px;color:var(--text-3)'>{role_label}</div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+        # ── Nav items ────────────────────────────────────────────────
+        st.markdown("""<div style='font-size:10px;color:var(--text-4);letter-spacing:1.6px;
+                        text-transform:uppercase;padding:6px 16px 4px'>Operación</div>""",
+                    unsafe_allow_html=True)
+
+        if role == "gerencia":
+            nav_items = [
+                ("resumen",    "📊  Resumen"),
+                ("vendedores", "👥  Vendedores"),
+                ("por_zona",   "🗺️  Por Zona"),
+                ("clientes",   "🔍  Clientes"),
+            ]
+        else:
+            nav_items = [("resumen", "📊  Mi Panel")]
+
+        for key, label in nav_items:
+            is_active = (nav_page == key)
+            btn_type  = "primary" if is_active else "secondary"
+            if st.button(label, key=f"nav_{key}", use_container_width=True, type=btn_type):
+                st.session_state["nav_page"] = key
+                st.rerun()
+
+        # ── Sync status block ────────────────────────────────────────
+        st.markdown("""
+        <div style='margin:14px 12px 0;padding:12px;border:1px solid var(--line);
+                    border-radius:9px;
+                    background:linear-gradient(140deg,rgba(110,197,49,0.07),transparent 60%)'>
+            <div style='font-size:10px;color:var(--green);letter-spacing:1.4px;
+                        text-transform:uppercase;font-weight:600;margin-bottom:4px;
+                        display:flex;align-items:center;gap:6px'>
+                <span class="live-dot" style='display:inline-block;width:5px;height:5px;
+                    border-radius:99px;background:var(--green)'></span>
+                Sync activo
+            </div>
+            <div style='font-size:11px;color:var(--text-2);line-height:1.4'>
+                Excel → Google Sheets.<br>Datos del último proceso.
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+        # ── Footer spacer + icon buttons ─────────────────────────────
+        st.markdown("<div style='flex:1;min-height:20px'></div>", unsafe_allow_html=True)
+        st.markdown("<div style='padding:10px 12px 14px;border-top:1px solid var(--line);margin-top:14px'></div>",
+                    unsafe_allow_html=True)
+
+        fc1, fc2, fc3 = st.columns(3)
+        for col, icon, key, tip, action in [
+            (fc1, "⚙", "sb_cfg",    "Configuración", None),
+            (fc2, "🔄", "sb_ref",   "Actualizar datos", "refresh"),
+            (fc3, "✕", "sb_logout", "Cerrar sesión",   "logout"),
+        ]:
+            with col:
+                st.markdown('<div class="sidebar-icon-btn">', unsafe_allow_html=True)
+                if st.button(icon, key=key, help=tip):
+                    if action == "refresh":
+                        load_data.clear()
+                        st.rerun()
+                    elif action == "logout":
+                        for k in list(st.session_state.keys()):
+                            del st.session_state[k]
+                        st.rerun()
+                st.markdown('</div>', unsafe_allow_html=True)
+
+
+def render_topbar(title, subtitle):
+    """Top bar con breadcrumb, título, live dot y período."""
+    st.markdown(f"""
+    <div class="orbit-topbar">
+        <div>
+            <div style='font-size:11px;color:var(--text-3);letter-spacing:0.6px;margin-bottom:3px'>
+                Orbit &nbsp;›&nbsp; {subtitle}
+            </div>
+            <h1 style='margin:0;font-size:22px;font-weight:600;letter-spacing:-0.3px;color:var(--text)'>{title}</h1>
+        </div>
+        <div style='flex:1'></div>
+        <div class="period-chip">
+            <span class="live-dot" style='width:6px;height:6px;border-radius:99px;
+                background:var(--green);display:inline-block'></span>
+            <span style='color:var(--text-2);font-size:12px'>Período</span>
+            <span class='num' style='font-size:12px;font-weight:500'>{dia_es()}</span>
+        </div>
     </div>
     """, unsafe_allow_html=True)
 
-    if show_logout:
-        _, col_btns = st.columns([9, 1])
-        with col_btns:
-            bc1, bc2 = st.columns(2)
-            with bc1:
-                if st.button("🔄", key=f"refresh_{logout_key}", help="Actualizar datos"):
-                    load_data.clear()
-                    st.rerun()
-            with bc2:
-                if st.button("✕", key=logout_key, help="Cerrar sesión"):
-                    for k in list(st.session_state.keys()):
-                        del st.session_state[k]
-                    st.rerun()
+
+def page_header(subtitle, show_logout=True, logout_key="logout"):
+    """Compatibilidad legacy — usa render_topbar internamente."""
+    render_topbar(subtitle.split("·")[0].strip(), subtitle)
 
 
 # ─── Charts ────────────────────────────────────────────────────────────────────
@@ -830,59 +1028,137 @@ def render_clientes(df, context=""):
 # ═══════════════════════════════════════════════════════════════════════════════
 def login_page():
     inject_css()
-    st.markdown("<div style='height:4rem'></div>", unsafe_allow_html=True)
+    inject_audio()
 
-    _, cc, _ = st.columns([1, 1.1, 1])
+    mark_b64     = get_mark_b64()
+    wordmark_b64 = get_wordmark_b64()
+    pyp_logo_b64 = get_pyp_logo_b64()
+
+    # Ambient radial glow
+    st.markdown("""
+    <style>
+    .stApp {
+        background: radial-gradient(60% 50% at 50% 25%,
+            rgba(110,197,49,0.07), transparent 70%) !important;
+    }
+    [data-testid="stSidebar"] { display: none !important; }
+    [data-testid="stSidebarCollapseButton"] { display: none !important; }
+    .block-container { padding-top: 2rem !important; }
+    </style>
+    """, unsafe_allow_html=True)
+
+    _, cc, _ = st.columns([1, 1.15, 1])
     with cc:
-        logo_b64 = get_logo_b64()
-        if logo_b64:
+        # ── Logo flotante ────────────────────────────────────────────
+        if mark_b64:
+            wm_html = (f"<img src='data:image/png;base64,{wordmark_b64}'"
+                       f" style='height:34px;width:auto;margin-top:12px;filter:brightness(1.1)'/>"
+                       if wordmark_b64 else "")
             st.markdown(f"""
-            <div style='text-align:center;margin-bottom:0.5rem'>
-                <img src='data:image/png;base64,{logo_b64}'
-                     style='max-width:260px;width:100%;
-                            filter:brightness(1.55) drop-shadow(0 0 14px rgba(110,197,49,0.6));'/>
-            </div>""", unsafe_allow_html=True)
-        elif os.path.exists(LOGO):
-            st.image(LOGO, use_container_width=True)
+            <div style='display:flex;flex-direction:column;align-items:center;margin-bottom:22px'>
+                <img src='data:image/png;base64,{mark_b64}'
+                     class='orbit-mark-spin'
+                     style='width:112px;height:112px;
+                            filter:drop-shadow(0 0 28px rgba(110,197,49,0.55));'/>
+                {wm_html}
+                <div style='font-size:10px;color:var(--text-3);letter-spacing:2.5px;
+                            text-transform:uppercase;margin-top:10px;font-weight:500'>
+                    Plataforma comercial
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+        else:
+            logo_b64 = get_logo_b64()
+            if logo_b64:
+                st.markdown(f"""
+                <div style='text-align:center;margin-bottom:1rem'>
+                    <img src='data:image/png;base64,{logo_b64}'
+                         style='max-width:240px;filter:drop-shadow(0 0 18px rgba(110,197,49,0.6))'/>
+                </div>""", unsafe_allow_html=True)
 
-        st.markdown(f"""
-        <div style='text-align:center;margin:1.2rem 0 1.8rem 0'>
-            <div style='color:{GRAY};font-size:0.75rem;letter-spacing:4px;
-                        text-transform:uppercase;font-weight:600'>Plataforma Comercial</div>
+        # ── Login card ───────────────────────────────────────────────
+        st.markdown("""
+        <div style='background:var(--surface);border:1px solid var(--line);
+                    border-radius:18px;padding:30px 32px 24px;
+                    box-shadow:0 30px 80px rgba(0,0,0,0.5),0 0 0 1px rgba(110,197,49,0.04)'>
+        </div>""", unsafe_allow_html=True)
+
+        all_perfiles = ["— Seleccioná tu perfil —", "Gerencia"] + list(VENDOR_NAMES.values())
+        perfil = st.selectbox("Perfil", all_perfiles, key="login_perfil", label_visibility="collapsed")
+
+        # Profile mini card
+        if perfil and perfil != "— Seleccioná tu perfil —":
+            tag = perfil[:2].upper()
+            rol_txt = "Gerencia comercial · Acceso completo" if perfil == "Gerencia" else "Vendedor/a"
+            st.markdown(f"""
+            <div style='padding:8px 11px;background:rgba(110,197,49,0.06);
+                        border:1px solid var(--green-line);border-radius:8px;
+                        display:flex;align-items:center;gap:9px;font-size:12px;
+                        margin:6px 0 10px'>
+                <div style='width:26px;height:26px;border-radius:6px;
+                            background:rgba(110,197,49,0.15);color:var(--green);
+                            display:grid;place-items:center;font-weight:600;font-size:10px;
+                            flex-shrink:0'>{tag}</div>
+                <div>
+                    <div style='font-weight:500;color:var(--text)'>{perfil}</div>
+                    <div style='color:var(--text-3);font-size:10px'>{rol_txt}</div>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+
+        pwd = st.text_input("Contraseña", type="password", key="login_pwd",
+                            placeholder="••••••••", label_visibility="collapsed")
+
+        st.markdown('<div class="login-btn">', unsafe_allow_html=True)
+        if st.button("INGRESAR →", key="btn_login", use_container_width=True):
+            if perfil == "— Seleccioná tu perfil —":
+                st.warning("Elegí un perfil primero.")
+            elif perfil == "Gerencia" and pwd == MGMT_PASS:
+                st.session_state.update({"logged_in": True, "role": "gerencia",
+                                         "vendor_id": None, "vendor_name": "Matías Torres",
+                                         "nav_page": "resumen"})
+                st.rerun()
+            elif perfil in VENDOR_NAMES.values() and pwd == VENDOR_PASS:
+                vid = next(k for k, v in VENDOR_NAMES.items() if v == perfil)
+                st.session_state.update({"logged_in": True, "role": "vendor",
+                                         "vendor_id": vid, "vendor_name": perfil,
+                                         "nav_page": "resumen"})
+                st.rerun()
+            else:
+                st.error("Contraseña incorrecta.")
+        st.markdown('</div>', unsafe_allow_html=True)
+
+        st.markdown("""
+        <div style='display:flex;justify-content:space-between;font-size:11px;
+                    color:var(--text-4);margin-top:12px'>
+            <span>Orbit · Tienda Perfecta</span>
+            <span style='display:inline-flex;align-items:center;gap:5px'>
+                <span class='live-dot' style='width:5px;height:5px;border-radius:99px;
+                    background:var(--green);display:inline-block'></span>
+                Conectado
+            </span>
         </div>
         """, unsafe_allow_html=True)
 
-        with st.container():
-            st.markdown(f"<div class='ocard'>", unsafe_allow_html=True)
+        # ── P&P logo ─────────────────────────────────────────────────
+        if pyp_logo_b64:
+            st.markdown(f"""
+            <div style='margin-top:22px;padding-top:18px;border-top:1px solid var(--line);
+                        display:flex;flex-direction:column;align-items:center;gap:7px'>
+                <div style='font-size:9px;color:var(--text-4);letter-spacing:2.2px;
+                            text-transform:uppercase;font-weight:600'>Operado por</div>
+                <img src='data:image/png;base64,{pyp_logo_b64}'
+                     style='max-width:160px;height:auto;max-height:70px;
+                            filter:drop-shadow(0 4px 16px rgba(56,110,255,0.3)) brightness(1.15) saturate(1.15)'/>
+            </div>
+            """, unsafe_allow_html=True)
 
-            vendor_options = ["— Seleccioná tu perfil —", "Gerencia"] + list(VENDOR_NAMES.values())
-            perfil = st.selectbox("Perfil", vendor_options, key="login_perfil")
-            pwd    = st.text_input("Contraseña", type="password", key="login_pwd",
-                                   placeholder="••••••••")
-
-            st.markdown("<div class='login-btn'>", unsafe_allow_html=True)
-            if st.button("INGRESAR →", key="btn_login"):
-                if perfil == "Gerencia" and pwd == MGMT_PASS:
-                    st.session_state.update({"logged_in": True, "role": "gerencia",
-                                             "vendor_id": None, "vendor_name": "Gerencia"})
-                    st.rerun()
-                elif perfil in VENDOR_NAMES.values() and pwd == VENDOR_PASS:
-                    vid = next(k for k, v in VENDOR_NAMES.items() if v == perfil)
-                    st.session_state.update({"logged_in": True, "role": "vendor",
-                                             "vendor_id": vid, "vendor_name": perfil})
-                    st.rerun()
-                elif perfil == "— Seleccioná tu perfil —":
-                    st.warning("Elegí tu perfil primero.")
-                else:
-                    st.error("Contraseña incorrecta. Volvé a intentarlo.")
-            st.markdown("</div>", unsafe_allow_html=True)  # close login-btn
-
-            st.markdown("</div>", unsafe_allow_html=True)
-
-        st.markdown(f"""
-        <div style='text-align:center;color:#333;font-size:0.7rem;margin-top:2rem'>
-            Orbit © 2026 · Propiedad de Torres Matías
-        </div>""", unsafe_allow_html=True)
+    st.markdown("""
+    <div style='text-align:center;color:var(--text-4);font-size:10px;
+                letter-spacing:1.5px;margin-top:1.5rem'>
+        Orbit © 2026 · Propiedad de Torres Matías
+    </div>
+    """, unsafe_allow_html=True)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -890,6 +1166,7 @@ def login_page():
 # ═══════════════════════════════════════════════════════════════════════════════
 def vendor_page(vendor_id, vendor_name):
     inject_css()
+    inject_audio()
     cli, obj_tax, obj_vend, oport, foco = load_data()
 
     vid     = str(vendor_id)
@@ -907,9 +1184,9 @@ def vendor_page(vendor_id, vendor_name):
     tp_eligible= int(mis["TP_ELIGIBLE"].sum())
     n_oport    = len(mi_op)
 
-    # ── Header
-    page_header(f"Zona {vendor_name}  ·  {datetime.now().strftime('%A %d/%m').capitalize()}",
-                logout_key="vend_logout")
+    # ── Sidebar + Topbar
+    render_sidebar(role="vendor", vendor_name=vendor_name)
+    render_topbar(f"Mi Panel — {vendor_name}", f"Zona {vendor_name}")
 
     # ── KPI strip
     c1, c2, c3, c4 = st.columns(4)
@@ -1049,6 +1326,7 @@ def vendor_page(vendor_id, vendor_name):
 # ═══════════════════════════════════════════════════════════════════════════════
 def management_page():
     inject_css()
+    inject_audio()
     cli, obj_tax, obj_vend, oport, foco = load_data()
 
     total     = len(cli)
@@ -1062,10 +1340,10 @@ def management_page():
     t_acum = obj_vend["ACUMULADO"].sum()
     t_cum  = t_acum / t_obj * 100 if t_obj else 0
 
-    page_header(
-        f"Panel Gerencial  ·  {dia_es()}  ·  {total} clientes",
-        logout_key="mgmt_logout"
-    )
+    # ── Sidebar + Topbar ────────────────────────────────────────────────────────
+    render_sidebar(role="gerencia", vendor_name=st.session_state.get("vendor_name", "Matías Torres"))
+    nav_page = st.session_state.get("nav_page", "resumen")
+    render_topbar("Resumen ejecutivo", f"Panel · {total} clientes")
 
     # ── Drill-down data maps
     drill_df_map = {
@@ -1082,49 +1360,59 @@ def management_page():
         "crit":  f"Clientes críticos < 30% — {n_crit} clientes",
     }
 
-    # ── Global KPIs + Ver buttons
+    # ── Hero KPI cards (clickables — siempre visibles) ──────────────────────────
     drill = st.session_state.get("mgmt_drill")
     c1, c2, c3, c4, c5 = st.columns(5)
 
-    for col, dk, lbl, val, sub, color in [
-        (c1, "port",  "Portafolio Global",  f"{pp_global:.0f}%", f"{total} clientes",               pct_color(pp_global)),
-        (c2, "tp",    "TP Sistema",          f"{tp_ok}",           f"{pct_tp:.0f}% del padrón",       GREEN if pct_tp >= 50 else YELLOW),
-        (c3, None,    "Objetivo TP Dist.",   f"{t_cum:.0f}%",      f"{t_acum:.0f} / {t_obj:.0f} TPs", pct_color(t_cum)),
-        (c4, "oport", "⚡ Oportunidad",       f"{n_oport}",         "clientes 60–79%",                 YELLOW),
-        (c5, "crit",  "🔴 Críticos < 30%",   f"{n_crit}",          "requieren atención",               RED),
-    ]:
-        col.markdown(kpi_card_html(lbl, val, sub, color), unsafe_allow_html=True)
+    kpi_data = [
+        (c1, "port",  "Portafolio Global",  f"{pp_global:.0f}%", f"{total} clientes",                pct_color(pp_global)),
+        (c2, "tp",    "TP Sistema",          f"{tp_ok}",           f"{pct_tp:.0f}% del padrón",        GREEN if pct_tp >= 50 else YELLOW),
+        (c3, None,    "Objetivo TP Dist.",   f"{t_cum:.0f}%",      f"{t_acum:.0f}/{t_obj:.0f} TPs",    pct_color(t_cum)),
+        (c4, "oport", "Oportunidad 60-79%", f"{n_oport}",         "clientes en zona",                  YELLOW),
+        (c5, "crit",  "Críticos < 30%",     f"{n_crit}",          "requieren atención",                RED),
+    ]
+
+    for col, dk, lbl, val, sub, color in kpi_data:
+        is_active = (drill == dk) if dk else False
+        card_class = f"kpi-{dk}" if dk else ""
+        col.markdown(kpi_card_html(lbl, val, sub, color, card_class, is_active), unsafe_allow_html=True)
         if dk:
-            is_active = (drill == dk)
-            btn_lbl = "✕ Ocultar" if is_active else "▶ Ver clientes"
-            if col.button(btn_lbl, key=f"drill_{dk}"):
+            # Botón invisible sobre la card (ver CSS :has selector)
+            if col.button("", key=f"drill_{dk}", use_container_width=True):
                 st.session_state["mgmt_drill"] = None if is_active else dk
                 st.rerun()
 
-    # ── Drill-down panel (between KPIs and tabs)
+    # ── Drill-down panel ────────────────────────────────────────────────────────
     drill = st.session_state.get("mgmt_drill")
     if drill and drill in drill_df_map:
         drill_df = drill_df_map[drill]
+        close_col, _ = st.columns([6, 1])
         st.markdown(f"""
-        <div style='background:#0D1A04;border:1px solid rgba(110,197,49,0.35);
-                    border-radius:12px;padding:0.75rem 1.2rem;margin:0.9rem 0 0.5rem 0;
-                    display:flex;align-items:center;gap:1rem'>
+        <div style='background:rgba(110,197,49,0.06);border:1px solid rgba(110,197,49,0.32);
+                    border-radius:12px;padding:12px 18px;margin:12px 0 6px;
+                    display:flex;align-items:center;gap:12px;animation:fade-in .3s ease'>
+            <span style='width:6px;height:6px;border-radius:99px;background:var(--green);
+                         display:inline-block;flex-shrink:0'></span>
             <div style='flex:1'>
-                <div style='color:rgba(110,197,49,0.6);font-size:0.63rem;text-transform:uppercase;
-                            letter-spacing:2.5px;font-weight:700;margin-bottom:0.15rem'>Detalle activo</div>
-                <div style='color:#FFFFFF;font-weight:600;font-size:0.9rem'>{drill_labels[drill]}</div>
+                <div style='color:rgba(110,197,49,0.65);font-size:10px;text-transform:uppercase;
+                            letter-spacing:2px;font-weight:600;margin-bottom:2px'>Detalle activo</div>
+                <div style='color:var(--text);font-weight:500;font-size:14px'>{drill_labels[drill]}</div>
             </div>
         </div>""", unsafe_allow_html=True)
         render_clientes(drill_df)
         st.markdown("<hr>", unsafe_allow_html=True)
 
-    # ── Main tabs
+    # ── Navegación por sidebar → secciones ─────────────────────────────────────
     tab1, tab2, tab3, tab4 = st.tabs([
         "📊  Resumen",
         "👥  Por Vendedor",
         "🗺️  Por Zona",
         "🔍  Clientes",
     ])
+
+    # Sincronizar tab con nav_page del sidebar
+    _tab_map = {"resumen": 0, "vendedores": 1, "por_zona": 2, "clientes": 3}
+    _active_idx = _tab_map.get(nav_page, 0)
 
     # ── TAB 1: RESUMEN ──────────────────────────────────────────────────────────
     with tab1:
