@@ -542,6 +542,55 @@ def inject_css():
     .stProgress > div > div > div > div {{
         background: linear-gradient(90deg, var(--green), var(--green-dim));
     }}
+
+    /* ── Mobile responsive ────────────────────────────────────────── */
+    @media (max-width: 768px) {{
+        /* Sidebar: dejar que Streamlit la colapse con hamburger */
+        [data-testid="stSidebar"] {{
+            min-width: 200px !important;
+            max-width: 80vw !important;
+        }}
+        /* Top bar: compacto */
+        .orbit-topbar {{
+            padding: 12px 16px !important;
+            margin: 0 -1rem 1rem -1rem !important;
+            flex-wrap: wrap !important;
+            gap: 8px !important;
+        }}
+        .orbit-topbar h1 {{
+            font-size: 17px !important;
+        }}
+        .period-chip {{
+            font-size: 10px !important;
+            padding: 4px 8px !important;
+        }}
+        /* KPI cards */
+        .kpi-card {{
+            padding: 14px !important;
+        }}
+        /* Block container */
+        .block-container {{
+            padding-left: 0.8rem !important;
+            padding-right: 0.8rem !important;
+            max-width: 100% !important;
+        }}
+        /* Métricas */
+        [data-testid="stMetricValue"] {{
+            font-size: 1.4rem !important;
+        }}
+        /* Ocultar grid en mobile (performance) */
+        .stApp::before {{ display: none !important; }}
+        /* Tabs scrollables */
+        .stTabs [data-baseweb="tab-list"] {{
+            overflow-x: auto !important;
+            flex-wrap: nowrap !important;
+        }}
+        .stTabs [data-baseweb="tab"] {{
+            white-space: nowrap !important;
+            font-size: 12px !important;
+            padding: 0.35rem 0.7rem !important;
+        }}
+    }}
     </style>
     """, unsafe_allow_html=True)
 
@@ -1181,7 +1230,7 @@ def vendor_page(vendor_id, vendor_name):
 
     pct_port   = mis["PORTAFOLIO_PCT"].mean() if len(mis) else 0
     tp_sistema = int((mis["TP_SISTEMA"] == True).sum())
-    tp_eligible= int(mis["TP_ELIGIBLE"].sum())
+    tp_eligible= int(mis["TP_ELIGIBLE"].sum()) if "TP_ELIGIBLE" in mis.columns else len(mis)
     n_oport    = len(mi_op)
 
     # ── Sidebar + Topbar
