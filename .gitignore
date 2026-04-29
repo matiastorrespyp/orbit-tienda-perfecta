@@ -1,0 +1,33 @@
+# Credenciales y tokens — NUNCA subir a GitHub
+credenciales/
+.ngrok_token
+.streamlit/secrets.toml
+google-oauth-token.json
+
+# Archivos de datos locales (se generan con el motor)
+output/
+inputs/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+.env
+venv/
+.venv/
+
+# Logs
+*.log
+streamlit_log.txt
+url_publica.txt
+
+# Editor
+.vscode/
+.idea/
+*.swp
+Thumbs.db

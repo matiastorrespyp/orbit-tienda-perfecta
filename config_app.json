@@ -1,0 +1,14 @@
+{
+  "mgmt_password": "orbit2026",
+  "vendor_password": "tp2026",
+  "vendor_names": {
+    "2": "Juliana",
+    "3": "Nadia",
+    "4": "Ángel",
+    "5": "Majo",
+    "6": "Andrea"
+  },
+  "company_logo": "assets/empresa.png",
+  "ngrok_token": "3D2r36K741oa7TUrZxjJOSD26QO_7TofqVrPaDCuNdxZXp9QC",
+  "ngrok_domain": "estanque-itunes-morbidamente.ngrok-free.app"
+}
