@@ -130,6 +130,9 @@ def inject_audio():
 
 # ─── CSS ───────────────────────────────────────────────────────────────────────
 def inject_css():
+    """Inyecta CSS en window.parent.document via JS (bypasa sanitización de Streamlit)."""
+    import streamlit.components.v1 as components
+
     cursor_b64 = get_cursor_b64()
     if cursor_b64:
         cur_auto = f"url('data:image/png;base64,{cursor_b64}') 16 4, auto"
@@ -138,11 +141,8 @@ def inject_css():
     else:
         cur_auto, cur_ptr, cur_txt = "auto", "pointer", "text"
 
-    st.markdown(f"""
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-    <style>
+    # Construimos el CSS como string Python (las llaves CSS son literales aquí)
+    css = f"""
     :root {{
         --bg:         #0A0B0A;
         --bg-1:       #0E100E;
@@ -164,12 +164,10 @@ def inject_css():
         --yellow:     #F0C000;
         --orange:     #E87A00;
     }}
-
     /* Cursor Dorito */
     *, *::before, *::after {{ cursor: {cur_auto} !important; }}
     a, button, [role="button"], .clickable, label[for], summary {{ cursor: {cur_ptr} !important; }}
     input[type="text"], input[type="password"], input[type="search"], textarea {{ cursor: {cur_txt} !important; }}
-
     /* Base */
     html, body, [class*="css"] {{
         font-family: 'Geist', -apple-system, BlinkMacSystemFont, system-ui, sans-serif !important;
@@ -181,7 +179,6 @@ def inject_css():
     .stApp {{ background-color: var(--bg); }}
     #MainMenu, footer, header {{ visibility: hidden; }}
     .block-container {{ padding-top: 0 !important; padding-bottom: 0 !important; max-width: 1400px; }}
-
     /* Ambient grid */
     .stApp::before {{
         content: '';
@@ -192,14 +189,12 @@ def inject_css():
         background-size: 64px 64px;
         mask-image: radial-gradient(ellipse 80% 60% at 30% 20%, #000 30%, transparent 80%);
     }}
-
     /* Scrollbar */
     ::-webkit-scrollbar {{ width: 10px; height: 10px; }}
     ::-webkit-scrollbar-track {{ background: transparent; }}
     ::-webkit-scrollbar-thumb {{ background: var(--surface-3); border-radius: 8px; border: 2px solid var(--bg); }}
     ::-webkit-scrollbar-thumb:hover {{ background: var(--line-2); }}
-
-    /* ── Animations ──────────────────────────────────────────────── */
+    /* Animations */
     @keyframes floaty {{
         0%, 100% {{ transform: translateY(0) rotate(0deg); }}
         50%       {{ transform: translateY(-8px) rotate(6deg); }}
@@ -226,9 +221,8 @@ def inject_css():
     }}
     .live-dot {{ animation: liveDot 2.4s ease-in-out infinite; }}
     .orbit-mark-spin {{ animation: floaty 5.5s ease-in-out infinite; }}
-    .orbit-mark-launch {{ animation: launch 1.1s cubic-bezier(.4,0,.2,1) forwards !important; animation-duration: 1.1s !important; }}
-
-    /* ── Sidebar ──────────────────────────────────────────────────── */
+    .orbit-mark-launch {{ animation: launch 1.1s cubic-bezier(.4,0,.2,1) forwards !important; }}
+    /* Sidebar */
     [data-testid="stSidebar"] {{
         background: var(--bg-1) !important;
         border-right: 1px solid var(--line) !important;
@@ -236,71 +230,47 @@ def inject_css():
         max-width: 236px !important;
     }}
     [data-testid="stSidebar"] > div {{
-        padding: 0 !important;
-        gap: 0 !important;
-        overflow-x: hidden !important;
+        padding: 0 !important; gap: 0 !important; overflow-x: hidden !important;
     }}
     [data-testid="stSidebarCollapseButton"],
     button[data-testid="collapsedControl"] {{ display: none !important; }}
     [data-testid="stSidebar"] .stButton > button {{
-        background: transparent !important;
-        color: var(--text-2) !important;
-        border: none !important;
-        border-radius: 7px !important;
-        padding: 8px 10px !important;
-        font-size: 13px !important;
-        font-weight: 500 !important;
-        width: 100% !important;
-        text-align: left !important;
-        justify-content: flex-start !important;
-        box-shadow: none !important;
-        transform: none !important;
+        background: transparent !important; color: var(--text-2) !important;
+        border: none !important; border-radius: 7px !important;
+        padding: 8px 10px !important; font-size: 13px !important;
+        font-weight: 500 !important; width: 100% !important;
+        text-align: left !important; justify-content: flex-start !important;
+        box-shadow: none !important; transform: none !important;
         letter-spacing: 0.1px !important;
         transition: background .18s, color .18s, transform .22s cubic-bezier(.2,.8,.2,1) !important;
     }}
     [data-testid="stSidebar"] .stButton > button:hover {{
-        background: rgba(255,255,255,0.025) !important;
-        color: var(--text) !important;
-        transform: translateX(2px) !important;
-        box-shadow: none !important;
+        background: rgba(255,255,255,0.025) !important; color: var(--text) !important;
+        transform: translateX(2px) !important; box-shadow: none !important;
     }}
-    /* Active nav item */
     [data-testid="stSidebar"] .stButton > button[kind="primary"] {{
-        background: var(--surface-2) !important;
-        color: var(--text) !important;
+        background: var(--surface-2) !important; color: var(--text) !important;
         border-left: 2px solid var(--green) !important;
-        border-radius: 7px !important;
-        padding-left: 8px !important;
+        border-radius: 7px !important; padding-left: 8px !important;
     }}
-    /* Sidebar icon footer buttons */
     [data-testid="stSidebar"] .sidebar-icon-btn .stButton > button {{
-        width: 30px !important;
-        height: 30px !important;
-        padding: 0 !important;
-        border: 1px solid var(--line) !important;
-        border-radius: 7px !important;
-        font-size: 13px !important;
-        display: grid !important;
-        place-items: center !important;
-        justify-content: center !important;
+        width: 30px !important; height: 30px !important; padding: 0 !important;
+        border: 1px solid var(--line) !important; border-radius: 7px !important;
+        font-size: 13px !important; display: grid !important;
+        place-items: center !important; justify-content: center !important;
     }}
     [data-testid="stSidebar"] .sidebar-icon-btn .stButton > button:hover {{
-        border-color: var(--green-line) !important;
-        color: var(--green) !important;
-        background: var(--green-soft) !important;
-        transform: translateY(-2px) !important;
+        border-color: var(--green-line) !important; color: var(--green) !important;
+        background: var(--green-soft) !important; transform: translateY(-2px) !important;
         box-shadow: 0 4px 12px rgba(110,197,49,0.18) !important;
     }}
-
-    /* ── Top bar ──────────────────────────────────────────────────── */
+    /* Top bar */
     .orbit-topbar {{
         display: flex; align-items: center; gap: 16px;
         padding: 18px 32px; margin: 0 -4rem 1.4rem -4rem;
         border-bottom: 1px solid var(--line);
-        background: rgba(10,11,10,0.9);
-        backdrop-filter: blur(10px);
-        position: sticky; top: 0; z-index: 4;
-        animation: fade-in 0.3s ease;
+        background: rgba(10,11,10,0.9); backdrop-filter: blur(10px);
+        position: sticky; top: 0; z-index: 4; animation: fade-in 0.3s ease;
     }}
     .period-chip {{
         display: flex; align-items: center; gap: 8px;
@@ -309,13 +279,11 @@ def inject_css():
         transition: border-color .22s;
     }}
     .period-chip:hover {{ border-color: var(--green-line); }}
-
-    /* ── KPI hero cards (clickable) ───────────────────────────────── */
+    /* KPI cards */
     .kpi-card {{
         position: relative; overflow: hidden;
         border: 1px solid var(--line); border-radius: 12px;
-        background: var(--surface); padding: 20px;
-        cursor: pointer;
+        background: var(--surface); padding: 20px; cursor: pointer;
         transition: transform .35s cubic-bezier(.2,.8,.2,1), border-color .25s, box-shadow .35s !important;
     }}
     .kpi-card:hover {{
@@ -333,7 +301,7 @@ def inject_css():
         border-color: rgba(110,197,49,0.5) !important;
         box-shadow: 0 0 0 1px rgba(110,197,49,0.2) !important;
     }}
-    /* Invisible overlay button that sits on top of each kpi-card */
+    /* Invisible overlay buttons on KPI cards */
     .element-container:has(.kpi-port) + .element-container .stButton > button,
     .element-container:has(.kpi-tp)   + .element-container .stButton > button,
     .element-container:has(.kpi-oport)+ .element-container .stButton > button,
@@ -341,64 +309,45 @@ def inject_css():
         background: transparent !important; border: none !important;
         box-shadow: none !important; outline: none !important;
         width: 100% !important; min-height: 120px !important;
-        margin-top: -124px !important;
-        opacity: 0 !important; cursor: pointer !important;
-        position: relative !important; z-index: 100 !important; padding: 0 !important;
+        margin-top: -124px !important; opacity: 0 !important;
+        cursor: pointer !important; position: relative !important;
+        z-index: 100 !important; padding: 0 !important;
     }}
-
-    /* ── Default buttons ──────────────────────────────────────────── */
+    /* Buttons */
     .stButton > button {{
-        background: transparent !important;
-        color: var(--text-3) !important;
-        border: 1px solid var(--line) !important;
-        border-radius: 7px !important;
-        padding: 0.3rem 0.9rem !important;
-        font-size: 13px !important;
-        font-weight: 500 !important;
-        font-family: 'Geist', sans-serif !important;
-        letter-spacing: 0.2px !important;
-        transition: all 0.22s ease !important;
+        background: transparent !important; color: var(--text-3) !important;
+        border: 1px solid var(--line) !important; border-radius: 7px !important;
+        padding: 0.3rem 0.9rem !important; font-size: 13px !important;
+        font-weight: 500 !important; font-family: 'Geist', sans-serif !important;
+        letter-spacing: 0.2px !important; transition: all 0.22s ease !important;
         white-space: nowrap !important;
     }}
     .stButton > button:hover {{
-        border-color: var(--green-line) !important;
-        color: var(--green) !important;
+        border-color: var(--green-line) !important; color: var(--green) !important;
         background: var(--green-soft) !important;
         box-shadow: 0 0 12px rgba(110,197,49,0.18) !important;
         transform: translateY(-1px) !important;
     }}
     .stButton > button:active {{ transform: translateY(0) !important; }}
-
-    /* ── Login INGRESAR button ────────────────────────────────────── */
+    /* Login button */
     .login-btn .stButton > button {{
         background: linear-gradient(135deg, var(--green) 0%, var(--green-dim) 100%) !important;
-        color: #0A0B0A !important;
-        font-weight: 700 !important;
-        font-size: 13px !important;
-        letter-spacing: 1.5px !important;
-        text-transform: uppercase !important;
-        border: none !important;
-        border-radius: 10px !important;
-        padding: 14px !important;
-        width: 100% !important;
-        box-shadow: 0 6px 20px rgba(110,197,49,0.28) !important;
+        color: #0A0B0A !important; font-weight: 700 !important; font-size: 13px !important;
+        letter-spacing: 1.5px !important; text-transform: uppercase !important;
+        border: none !important; border-radius: 10px !important; padding: 14px !important;
+        width: 100% !important; box-shadow: 0 6px 20px rgba(110,197,49,0.28) !important;
         transition: all .25s cubic-bezier(.2,.8,.2,1) !important;
     }}
     .login-btn .stButton > button:hover {{
-        transform: translateY(-2px) !important;
-        filter: brightness(1.08) !important;
+        transform: translateY(-2px) !important; filter: brightness(1.08) !important;
         box-shadow: 0 12px 32px rgba(110,197,49,0.45) !important;
     }}
     .login-btn .stButton > button:active {{ transform: translateY(0) scale(0.98) !important; }}
-
-    /* ── Inputs ───────────────────────────────────────────────────── */
+    /* Inputs */
     .stTextInput > div > div > input {{
-        background-color: #101210 !important;
-        color: var(--text) !important;
-        border: 1.5px solid var(--line) !important;
-        border-radius: 9px !important;
-        font-size: 14px !important;
-        font-family: inherit !important;
+        background-color: #101210 !important; color: var(--text) !important;
+        border: 1.5px solid var(--line) !important; border-radius: 9px !important;
+        font-size: 14px !important; font-family: inherit !important;
         transition: border-color .2s, box-shadow .2s !important;
     }}
     .stTextInput > div > div > input:focus {{
@@ -406,43 +355,33 @@ def inject_css():
         box-shadow: 0 0 0 3px rgba(110,197,49,0.10) !important;
     }}
     .stSelectbox > div > div {{
-        background-color: #101210 !important;
-        color: var(--text) !important;
-        border: 1.5px solid var(--line) !important;
-        border-radius: 9px !important;
+        background-color: #101210 !important; color: var(--text) !important;
+        border: 1.5px solid var(--line) !important; border-radius: 9px !important;
     }}
     .stSelectbox label, .stTextInput label {{
-        color: var(--text-3) !important;
-        font-size: 10.5px !important;
-        text-transform: uppercase !important;
-        letter-spacing: 1.4px !important;
+        color: var(--text-3) !important; font-size: 10.5px !important;
+        text-transform: uppercase !important; letter-spacing: 1.4px !important;
         font-weight: 600 !important;
     }}
-
-    /* ── Tabs ─────────────────────────────────────────────────────── */
+    /* Tabs */
     .stTabs [data-baseweb="tab-list"] {{
-        background-color: var(--surface);
-        border-radius: 9px; padding: 3px; gap: 2px;
+        background-color: var(--surface); border-radius: 9px; padding: 3px; gap: 2px;
         border: 1px solid var(--line);
     }}
     .stTabs [data-baseweb="tab"] {{
-        background-color: transparent; color: var(--text-3);
-        border-radius: 7px; font-weight: 500; font-size: 13px;
-        padding: 0.45rem 1rem; border: none; transition: color 0.2s;
+        background-color: transparent; color: var(--text-3); border-radius: 7px;
+        font-weight: 500; font-size: 13px; padding: 0.45rem 1rem;
+        border: none; transition: color 0.2s;
     }}
     .stTabs [data-baseweb="tab"]:hover {{ color: var(--text); }}
     .stTabs [aria-selected="true"] {{
         background: linear-gradient(135deg, var(--green), var(--green-dim)) !important;
-        color: #0A0B0A !important;
-        box-shadow: 0 2px 10px rgba(110,197,49,0.3) !important;
+        color: #0A0B0A !important; box-shadow: 0 2px 10px rgba(110,197,49,0.3) !important;
     }}
-
-    /* ── Expanders ────────────────────────────────────────────────── */
+    /* Expanders */
     details {{
-        background: var(--surface) !important;
-        border: 1px solid var(--line) !important;
-        border-radius: 10px !important;
-        margin-bottom: 0.4rem !important;
+        background: var(--surface) !important; border: 1px solid var(--line) !important;
+        border-radius: 10px !important; margin-bottom: 0.4rem !important;
         transition: border-color 0.2s !important;
     }}
     details:hover {{ border-color: var(--green-line) !important; }}
@@ -453,146 +392,100 @@ def inject_css():
     details summary:hover {{ color: var(--green) !important; }}
     details[open] summary {{ border-bottom: 1px solid var(--line); color: var(--green) !important; }}
     details > div {{ padding: 0.8rem 1rem !important; }}
-
-    /* ── Orbit data cards ─────────────────────────────────────────── */
+    /* Orbit cards */
     .ocard {{
         background: var(--surface); border: 1px solid var(--line);
         border-radius: 12px; padding: 1.2rem 1.4rem; margin-bottom: 0.7rem;
         transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
         animation: fade-in 0.35s ease;
     }}
-    .ocard:hover {{
-        transform: translateY(-2px);
-        box-shadow: 0 8px 28px rgba(0,0,0,0.35);
-        border-color: var(--green-line) !important;
-    }}
+    .ocard:hover {{ transform: translateY(-2px); box-shadow: 0 8px 28px rgba(0,0,0,0.35); border-color: var(--green-line) !important; }}
     .ocard-green  {{ border-left: 3px solid var(--green) !important; }}
     .ocard-yellow {{ border-left: 3px solid var(--yellow) !important; }}
     .ocard-orange {{ border-left: 3px solid var(--orange) !important; }}
     .ocard-red    {{ border-left: 3px solid var(--red) !important; }}
-
-    /* ── Row hover ────────────────────────────────────────────────── */
+    /* Row hover */
     .row-hover {{ transition: background .18s, transform .22s cubic-bezier(.2,.8,.2,1) !important; }}
-    .row-hover:hover {{
-        background: rgba(110,197,49,0.04) !important;
-        transform: translateX(2px) !important;
-    }}
-
-    /* ── Section label ────────────────────────────────────────────── */
+    .row-hover:hover {{ background: rgba(110,197,49,0.04) !important; transform: translateX(2px) !important; }}
+    /* Section label */
     .section-label {{
         font-size: 10.5px; font-weight: 600; color: var(--text-3);
         text-transform: uppercase; letter-spacing: 1.5px;
         margin: 1.4rem 0 0.7rem 0; padding-bottom: 0.4rem;
         border-bottom: 1px solid var(--line);
     }}
-
-    /* ── Mono numbers ─────────────────────────────────────────────── */
+    /* Mono numbers */
     .num {{ font-family: 'JetBrains Mono', monospace !important; font-feature-settings: "tnum" !important; }}
-
-    /* ── Metrics ──────────────────────────────────────────────────── */
+    /* Metrics */
     [data-testid="stMetricValue"] {{
         font-family: 'JetBrains Mono', monospace !important;
-        font-size: 2rem !important; font-weight: 600 !important;
-        color: var(--text) !important;
+        font-size: 2rem !important; font-weight: 600 !important; color: var(--text) !important;
     }}
     [data-testid="stMetricLabel"] {{
         color: var(--text-3) !important; font-size: 10.5px !important;
-        text-transform: uppercase !important; letter-spacing: 1.2px !important;
-        font-weight: 600 !important;
+        text-transform: uppercase !important; letter-spacing: 1.2px !important; font-weight: 600 !important;
     }}
-
-    /* ── Footer ───────────────────────────────────────────────────── */
+    /* Footer */
     .orbit-footer {{
         text-align: center; color: var(--text-4); font-size: 10px;
         padding: 2rem 0 0.5rem 0; margin-top: 2rem;
         border-top: 1px solid var(--line); letter-spacing: 1px;
     }}
-
-    /* ── SKU pills ────────────────────────────────────────────────── */
-    .sku-g {{ display:inline-block; background:#0F1F00; color:var(--green);
-              border:1px solid rgba(110,197,49,0.33); border-radius:20px;
-              padding:0.2rem 0.65rem; font-size:12px; margin:2px;
-              transition:all 0.18s ease; cursor:default; }}
+    /* SKU pills */
+    .sku-g {{ display:inline-block; background:#0F1F00; color:var(--green); border:1px solid rgba(110,197,49,0.33); border-radius:20px; padding:0.2rem 0.65rem; font-size:12px; margin:2px; transition:all 0.18s ease; cursor:default; }}
     .sku-g:hover {{ background:rgba(110,197,49,0.15); transform:scale(1.04); }}
-    .sku-o {{ display:inline-block; background:#1F0F00; color:var(--orange);
-              border:1px solid rgba(232,122,0,0.33); border-radius:20px;
-              padding:0.2rem 0.65rem; font-size:12px; margin:2px; cursor:default; }}
-    .sku-d {{ display:inline-block; background:var(--surface-3); color:var(--text-3);
-              border:1px solid var(--line); border-radius:20px;
-              padding:0.2rem 0.65rem; font-size:12px; margin:2px; cursor:default; }}
-
-    /* ── Badges ───────────────────────────────────────────────────── */
-    .bdg-g {{ display:inline-block; background:rgba(110,197,49,0.12); color:var(--green);
-               border:1px solid rgba(110,197,49,0.27); border-radius:20px;
-               padding:0.12rem 0.7rem; font-size:11px; font-weight:700; }}
-    .bdg-r {{ display:inline-block; background:rgba(232,75,75,0.12); color:var(--red);
-               border:1px solid rgba(232,75,75,0.27); border-radius:20px;
-               padding:0.12rem 0.7rem; font-size:11px; font-weight:700; }}
-    .bdg-y {{ display:inline-block; background:rgba(240,192,0,0.12); color:var(--yellow);
-               border:1px solid rgba(240,192,0,0.27); border-radius:20px;
-               padding:0.12rem 0.7rem; font-size:11px; font-weight:700; }}
-    .bdg-o {{ display:inline-block; background:rgba(232,122,0,0.12); color:var(--orange);
-               border:1px solid rgba(232,122,0,0.27); border-radius:20px;
-               padding:0.12rem 0.7rem; font-size:11px; font-weight:700; }}
-
-    /* ── HR / divider ─────────────────────────────────────────────── */
+    .sku-o {{ display:inline-block; background:#1F0F00; color:var(--orange); border:1px solid rgba(232,122,0,0.33); border-radius:20px; padding:0.2rem 0.65rem; font-size:12px; margin:2px; cursor:default; }}
+    .sku-d {{ display:inline-block; background:var(--surface-3); color:var(--text-3); border:1px solid var(--line); border-radius:20px; padding:0.2rem 0.65rem; font-size:12px; margin:2px; cursor:default; }}
+    /* Badges */
+    .bdg-g {{ display:inline-block; background:rgba(110,197,49,0.12); color:var(--green); border:1px solid rgba(110,197,49,0.27); border-radius:20px; padding:0.12rem 0.7rem; font-size:11px; font-weight:700; }}
+    .bdg-r {{ display:inline-block; background:rgba(232,75,75,0.12); color:var(--red); border:1px solid rgba(232,75,75,0.27); border-radius:20px; padding:0.12rem 0.7rem; font-size:11px; font-weight:700; }}
+    .bdg-y {{ display:inline-block; background:rgba(240,192,0,0.12); color:var(--yellow); border:1px solid rgba(240,192,0,0.27); border-radius:20px; padding:0.12rem 0.7rem; font-size:11px; font-weight:700; }}
+    .bdg-o {{ display:inline-block; background:rgba(232,122,0,0.12); color:var(--orange); border:1px solid rgba(232,122,0,0.27); border-radius:20px; padding:0.12rem 0.7rem; font-size:11px; font-weight:700; }}
+    /* HR */
     hr {{ border-color: var(--line) !important; margin: 0.6rem 0 1rem 0 !important; }}
-
-    /* ── Progress ─────────────────────────────────────────────────── */
-    .stProgress > div > div > div > div {{
-        background: linear-gradient(90deg, var(--green), var(--green-dim));
-    }}
-
-    /* ── Mobile responsive ────────────────────────────────────────── */
+    /* Progress */
+    .stProgress > div > div > div > div {{ background: linear-gradient(90deg, var(--green), var(--green-dim)); }}
+    /* Mobile */
     @media (max-width: 768px) {{
-        /* Sidebar: dejar que Streamlit la colapse con hamburger */
-        [data-testid="stSidebar"] {{
-            min-width: 200px !important;
-            max-width: 80vw !important;
-        }}
-        /* Top bar: compacto */
-        .orbit-topbar {{
-            padding: 12px 16px !important;
-            margin: 0 -1rem 1rem -1rem !important;
-            flex-wrap: wrap !important;
-            gap: 8px !important;
-        }}
-        .orbit-topbar h1 {{
-            font-size: 17px !important;
-        }}
-        .period-chip {{
-            font-size: 10px !important;
-            padding: 4px 8px !important;
-        }}
-        /* KPI cards */
-        .kpi-card {{
-            padding: 14px !important;
-        }}
-        /* Block container */
-        .block-container {{
-            padding-left: 0.8rem !important;
-            padding-right: 0.8rem !important;
-            max-width: 100% !important;
-        }}
-        /* Métricas */
-        [data-testid="stMetricValue"] {{
-            font-size: 1.4rem !important;
-        }}
-        /* Ocultar grid en mobile (performance) */
+        [data-testid="stSidebar"] {{ min-width: 200px !important; max-width: 80vw !important; }}
+        .orbit-topbar {{ padding: 12px 16px !important; margin: 0 -1rem 1rem -1rem !important; flex-wrap: wrap !important; gap: 8px !important; }}
+        .orbit-topbar h1 {{ font-size: 17px !important; }}
+        .period-chip {{ font-size: 10px !important; padding: 4px 8px !important; }}
+        .kpi-card {{ padding: 14px !important; }}
+        .block-container {{ padding-left: 0.8rem !important; padding-right: 0.8rem !important; max-width: 100% !important; }}
+        [data-testid="stMetricValue"] {{ font-size: 1.4rem !important; }}
         .stApp::before {{ display: none !important; }}
-        /* Tabs scrollables */
-        .stTabs [data-baseweb="tab-list"] {{
-            overflow-x: auto !important;
-            flex-wrap: nowrap !important;
-        }}
-        .stTabs [data-baseweb="tab"] {{
-            white-space: nowrap !important;
-            font-size: 12px !important;
-            padding: 0.35rem 0.7rem !important;
-        }}
+        .stTabs [data-baseweb="tab-list"] {{ overflow-x: auto !important; flex-wrap: nowrap !important; }}
+        .stTabs [data-baseweb="tab"] {{ white-space: nowrap !important; font-size: 12px !important; padding: 0.35rem 0.7rem !important; }}
     }}
-    </style>
-    """, unsafe_allow_html=True)
+    """
+
+    # Inyectamos via JS al documento padre (bypasa el sanitizador de Streamlit)
+    fonts_url = ("https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700"
+                 ";800;900&family=JetBrains+Mono:wght@400;500;600&display=swap")
+    components.html(f"""
+    <script>
+    (function() {{
+        var doc = window.parent.document;
+        if (doc.getElementById('orbit-tp-css')) return;
+        // Google Fonts preconnect + stylesheet
+        ['https://fonts.googleapis.com','https://fonts.gstatic.com'].forEach(function(h) {{
+            var l = doc.createElement('link'); l.rel='preconnect'; l.href=h;
+            if (h.includes('gstatic')) l.crossOrigin='';
+            doc.head.appendChild(l);
+        }});
+        var lf = doc.createElement('link');
+        lf.rel = 'stylesheet';
+        lf.href = '{fonts_url}';
+        doc.head.appendChild(lf);
+        // Orbit CSS
+        var s = doc.createElement('style');
+        s.id = 'orbit-tp-css';
+        s.textContent = {repr(css)};
+        doc.head.appendChild(s);
+    }})();
+    </script>
+    """, height=0, scrolling=False)
 
 
 # ─── Data ──────────────────────────────────────────────────────────────────────
