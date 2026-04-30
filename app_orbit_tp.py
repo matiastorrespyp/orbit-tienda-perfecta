@@ -76,7 +76,7 @@ st.set_page_config(
     page_title="Orbit · Tienda Perfecta",
     page_icon="🎯",
     layout="wide",
-    initial_sidebar_state="expanded",
+    initial_sidebar_state="auto",
 )
 
 # ─── Logo / asset b64 helpers ──────────────────────────────────────────────────
@@ -463,22 +463,47 @@ def inject_css():
     hr {{ border-color: var(--line) !important; margin: 0.6rem 0 1rem 0 !important; }}
     /* Progress */
     .stProgress > div > div > div > div {{ background: linear-gradient(90deg, var(--green), var(--green-dim)); }}
-    /* Desktop: ocultar botón colapso sidebar (siempre visible en desktop) */
+    /* Desktop: ocultar botón colapso sidebar (fija siempre abierta) */
     @media (min-width: 769px) {{
         [data-testid="stSidebarCollapseButton"],
         button[data-testid="collapsedControl"] {{ display: none !important; }}
     }}
     /* Mobile */
     @media (max-width: 768px) {{
-        /* Sidebar colapsable con hamburger nativo de Streamlit */
-        [data-testid="stSidebar"] {{ min-width: 240px !important; max-width: 88vw !important; }}
-        /* Botón hamburger/X visible y usable */
-        [data-testid="stSidebarCollapseButton"],
+        /* Sidebar como overlay al abrirla */
+        [data-testid="stSidebar"] {{
+            min-width: 260px !important; max-width: 82vw !important;
+            box-shadow: 4px 0 24px rgba(0,0,0,0.55) !important;
+        }}
+        /* Tab lateral verde — flecha para abrir sidebar */
         button[data-testid="collapsedControl"] {{
-            display: flex !important; z-index: 999 !important;
+            display: flex !important;
+            position: fixed !important;
+            left: 0 !important; top: 50% !important;
+            transform: translateY(-50%) !important;
+            z-index: 9999 !important;
             background: var(--surface-2) !important;
+            border: 1px solid var(--green-line) !important;
+            border-left: none !important;
+            border-radius: 0 10px 10px 0 !important;
+            width: 22px !important; height: 60px !important;
+            padding: 0 !important; margin: 0 !important;
+            align-items: center !important; justify-content: center !important;
+            color: var(--green) !important; font-size: 13px !important;
+            box-shadow: 3px 0 14px rgba(110,197,49,0.22) !important;
+            transition: width .2s, background .2s !important;
+        }}
+        button[data-testid="collapsedControl"]:hover,
+        button[data-testid="collapsedControl"]:active {{
+            width: 28px !important;
+            background: rgba(110,197,49,0.15) !important;
+        }}
+        /* X para cerrar sidebar cuando está abierta */
+        [data-testid="stSidebarCollapseButton"] {{
+            display: flex !important; z-index: 9999 !important;
+            background: var(--surface-3) !important;
             border: 1px solid var(--line) !important;
-            color: var(--text) !important; border-radius: 7px !important;
+            color: var(--text-2) !important; border-radius: 7px !important;
         }}
         .orbit-topbar {{ padding: 12px 16px !important; margin: 0 -1rem 1rem -1rem !important; flex-wrap: wrap !important; gap: 8px !important; }}
         .orbit-topbar h1 {{ font-size: 17px !important; }}
@@ -1456,14 +1481,9 @@ def management_page():
             fact_notp = pd.to_numeric(cli_notp["FACTURACION_CLIENTE"], errors="coerce").dropna()
             avg_tp   = fact_tp.mean()   if len(fact_tp)   else 0
             avg_notp = fact_notp.mean() if len(fact_notp) else 0
-            tot_tp   = fact_tp.sum()
-            tot_notp = fact_notp.sum()
-            tot_all  = tot_tp + tot_notp
-            pct_fact_tp   = tot_tp   / tot_all * 100 if tot_all else 0
-            pct_fact_notp = tot_notp / tot_all * 100 if tot_all else 0
             diff_pct = (avg_tp / avg_notp - 1) * 100 if avg_notp else 0
 
-            kg_tp_avg = kg_notp_avg = None
+            kg_tp_avg = kg_notp_avg = diff_kg_pct = None
             if has_kg:
                 kg_tp   = pd.to_numeric(cli_tp["KILOS_CLIENTE"],   errors="coerce").dropna()
                 kg_notp = pd.to_numeric(cli_notp["KILOS_CLIENTE"], errors="coerce").dropna()
@@ -1471,58 +1491,49 @@ def management_page():
                 kg_notp_avg = kg_notp.mean() if len(kg_notp) else 0
                 diff_kg_pct = (kg_tp_avg / kg_notp_avg - 1) * 100 if kg_notp_avg else 0
 
-            kg_tp_str   = f" | {kg_tp_avg:.1f} kg"   if kg_tp_avg   is not None else ""
-            kg_notp_str = f" | {kg_notp_avg:.1f} kg" if kg_notp_avg is not None else ""
-            diff_kg_str = f" | +{diff_kg_pct:.0f}% en kg" if kg_tp_avg is not None else ""
+            def _kg_row(val, color):
+                if val is None:
+                    return ""
+                return f"""<div style='margin-top:8px;padding-top:8px;border-top:1px solid var(--line)'>
+                    <div style='font-size:9px;color:var(--text-3);text-transform:uppercase;
+                                letter-spacing:1.2px;margin-bottom:3px'>Promedio kg</div>
+                    <div class='num' style='font-size:18px;font-weight:600;color:{color}'>
+                        {val:,.1f} <span style='font-size:12px;font-weight:400'>kg</span>
+                    </div></div>"""
 
-            section_label("Facturación mensual — TP vs No TP")
+            section_label("Facturación promedio mensual — TP vs No TP")
             fa, fb = st.columns(2)
             with fa:
                 st.markdown(f"""
                 <div class='ocard ocard-green' style='padding:1rem 1.2rem'>
                     <div style='font-size:10px;color:var(--text-3);text-transform:uppercase;
-                                letter-spacing:1.4px;font-weight:600;margin-bottom:8px'>
-                        Clientes TP confirmados ({len(cli_tp)})
+                                letter-spacing:1.4px;font-weight:600;margin-bottom:10px'>
+                        Cliente con TP &nbsp;<span style='opacity:.5'>({len(cli_tp)} clientes)</span>
                     </div>
+                    <div style='font-size:9px;color:var(--text-3);text-transform:uppercase;
+                                letter-spacing:1.2px;margin-bottom:3px'>Promedio $</div>
                     <div class='num' style='font-size:26px;font-weight:700;color:var(--green)'>
-                        {fmt_ars(tot_tp)}
+                        {fmt_ars(avg_tp)}
                     </div>
-                    <div style='color:var(--text-3);font-size:12px;margin:4px 0 10px'>
-                        {pct_fact_tp:.1f}% de la facturación total
-                    </div>
-                    {progress_bar_html(pct_fact_tp, GREEN, "6px")}
-                    <div style='margin-top:12px;padding-top:10px;border-top:1px solid var(--line)'>
-                        <div style='font-size:10px;color:var(--text-3);text-transform:uppercase;
-                                    letter-spacing:1.2px;margin-bottom:4px'>Promedio por cliente</div>
-                        <div class='num' style='font-size:20px;font-weight:600;color:var(--green)'>
-                            {fmt_ars(avg_tp)}{kg_tp_str}
-                        </div>
-                    </div>
+                    {_kg_row(kg_tp_avg, "var(--green)")}
                 </div>""", unsafe_allow_html=True)
             with fb:
                 st.markdown(f"""
                 <div class='ocard ocard-yellow' style='padding:1rem 1.2rem'>
                     <div style='font-size:10px;color:var(--text-3);text-transform:uppercase;
-                                letter-spacing:1.4px;font-weight:600;margin-bottom:8px'>
-                        Clientes No TP ({len(cli_notp)})
+                                letter-spacing:1.4px;font-weight:600;margin-bottom:10px'>
+                        Cliente sin TP &nbsp;<span style='opacity:.5'>({len(cli_notp)} clientes)</span>
                     </div>
+                    <div style='font-size:9px;color:var(--text-3);text-transform:uppercase;
+                                letter-spacing:1.2px;margin-bottom:3px'>Promedio $</div>
                     <div class='num' style='font-size:26px;font-weight:700;color:var(--yellow)'>
-                        {fmt_ars(tot_notp)}
+                        {fmt_ars(avg_notp)}
                     </div>
-                    <div style='color:var(--text-3);font-size:12px;margin:4px 0 10px'>
-                        {pct_fact_notp:.1f}% de la facturación total
-                    </div>
-                    {progress_bar_html(pct_fact_notp, YELLOW, "6px")}
-                    <div style='margin-top:12px;padding-top:10px;border-top:1px solid var(--line)'>
-                        <div style='font-size:10px;color:var(--text-3);text-transform:uppercase;
-                                    letter-spacing:1.2px;margin-bottom:4px'>Promedio por cliente</div>
-                        <div class='num' style='font-size:20px;font-weight:600;color:var(--yellow)'>
-                            {fmt_ars(avg_notp)}{kg_notp_str}
-                        </div>
-                    </div>
+                    {_kg_row(kg_notp_avg, "var(--yellow)")}
                 </div>""", unsafe_allow_html=True)
 
             # Brecha TP vs No TP
+            diff_kg_str = f" &nbsp;·&nbsp; <span class='num' style='color:var(--green);font-weight:700'>+{diff_kg_pct:.0f}%</span> más en kg" if diff_kg_pct is not None else ""
             st.markdown(f"""
             <div style='background:linear-gradient(135deg,rgba(110,197,49,0.08),rgba(110,197,49,0.03));
                         border:1px solid var(--green-line);border-radius:10px;
@@ -1530,14 +1541,13 @@ def management_page():
                         display:flex;align-items:center;gap:14px;flex-wrap:wrap'>
                 <span style='font-size:18px'>📈</span>
                 <div>
-                    <div style='font-size:11px;color:var(--text-3);text-transform:uppercase;
-                                letter-spacing:1.3px;font-weight:600'>Brecha TP vs No TP</div>
-                    <div style='font-size:13px;color:var(--text);margin-top:2px'>
+                    <div style='font-size:10px;color:var(--text-3);text-transform:uppercase;
+                                letter-spacing:1.3px;font-weight:600;margin-bottom:2px'>Brecha TP vs No TP · mes en curso</div>
+                    <div style='font-size:13px;color:var(--text)'>
                         Un cliente TP compra
                         <span class='num' style='color:var(--green);font-weight:700;font-size:15px'>
                             +{diff_pct:.0f}%
                         </span> más en ${diff_kg_str}
-                        &nbsp;·&nbsp; Fuente: facturación del mes (ImporteNetoItem / PesoKg)
                     </div>
                 </div>
             </div>""", unsafe_allow_html=True)
