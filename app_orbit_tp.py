@@ -76,7 +76,7 @@ st.set_page_config(
     page_title="Orbit · Tienda Perfecta",
     page_icon="🎯",
     layout="wide",
-    initial_sidebar_state="auto",
+    initial_sidebar_state="expanded",
 )
 
 # ─── Logo / asset b64 helpers ──────────────────────────────────────────────────
