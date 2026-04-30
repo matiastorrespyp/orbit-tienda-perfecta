@@ -996,13 +996,15 @@ def render_sidebar(role="gerencia", vendor_name="Matías Torres"):
 
         if role == "gerencia":
             nav_items = [
-                ("resumen",    "📊  Resumen"),
-                ("vendedores", "👥  Vendedores"),
-                ("por_zona",   "🗺️  Por Zona"),
-                ("clientes",   "🔍  Clientes"),
+                ("resumen",    "⊞  Resumen"),
+                ("vendedores", "⊕  Vendedores"),
+                ("clientes",   "⌂  Clientes"),
+                ("portafolio", "◎  Portafolio"),
+                ("foco",       "◉  Productos foco"),
+                ("por_zona",   "⊛  Zonas"),
             ]
         else:
-            nav_items = [("resumen", "📊  Mi Panel")]
+            nav_items = [("resumen", "⊞  Mi Panel")]
 
         for key, label in nav_items:
             is_active = (nav_page == key)
@@ -1010,6 +1012,50 @@ def render_sidebar(role="gerencia", vendor_name="Matías Torres"):
             if st.button(label, key=f"nav_{key}", use_container_width=True, type=btn_type):
                 st.session_state["nav_page"] = key
                 st.rerun()
+
+        # JS: reemplaza iconos unicode por SVG en los botones del sidebar
+        import streamlit.components.v1 as _comp
+        _comp.html("""
+        <script>
+        (function() {
+            try {
+                var el = window.frameElement;
+                if (el) { el.style.cssText='display:none!important;height:0!important;'; }
+            } catch(e) {}
+            var ICONS = {
+                '⊞': '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>',
+                '⊕': '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
+                '⌂': '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>',
+                '◎': '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',
+                '◉': '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>',
+                '⊛': '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>',
+            };
+            function patchNavBtns() {
+                var doc = window.parent.document;
+                var sb = doc.querySelector('[data-testid="stSidebar"]');
+                if (!sb) { setTimeout(patchNavBtns, 400); return; }
+                var btns = sb.querySelectorAll('.stButton > button');
+                btns.forEach(function(btn) {
+                    if (btn.dataset.navPatched) return;
+                    var txt = btn.textContent || '';
+                    var icon = null;
+                    Object.keys(ICONS).forEach(function(ch) {
+                        if (txt.indexOf(ch) !== -1) icon = ICONS[ch];
+                    });
+                    if (!icon) return;
+                    btn.dataset.navPatched = '1';
+                    var label = txt.replace(/^[ ][ ]*/, '').trim();
+                    btn.innerHTML = '<span style="display:flex;align-items:center;gap:10px;width:100%">'
+                        + '<span style="flex-shrink:0;display:flex;align-items:center;opacity:0.75">' + icon + '</span>'
+                        + '<span>' + label + '</span>'
+                        + '</span>';
+                });
+                setTimeout(patchNavBtns, 800);
+            }
+            patchNavBtns();
+        })();
+        </script>
+        """, height=0, scrolling=False)
 
         # ── Sync status block ────────────────────────────────────────
         st.markdown("""
@@ -2027,6 +2073,108 @@ def management_page():
             opport_top = cli[(cli["PORTAFOLIO_PCT"] >= 60) & (cli["PORTAFOLIO_PCT"] < 80)]\
                 .sort_values("PORTAFOLIO_PCT", ascending=False).head(20)
             render_clientes(opport_top)
+
+    elif nav_page == "portafolio":
+        # ── PORTAFOLIO ─────────────────────────────────────────────────────────
+        col_a, col_b = st.columns([1, 1.3])
+        with col_a:
+            st.markdown(donut_portafolio_html(cli), unsafe_allow_html=True)
+        with col_b:
+            # Portafolio por vendedora
+            section_label("Portafolio promedio por vendedora")
+            for vid_s, vname in VENDOR_NAMES.items():
+                v_cli = cli[cli["Vendedor_ID"] == vid_s]
+                if v_cli.empty:
+                    continue
+                v_pp  = v_cli["PORTAFOLIO_PCT"].mean()
+                v_tp  = int((v_cli["TP_SISTEMA"] == True).sum())
+                v_op  = len(v_cli[(v_cli["PORTAFOLIO_PCT"] >= 60) & (v_cli["PORTAFOLIO_PCT"] < 80)])
+                v_cr  = len(v_cli[v_cli["PORTAFOLIO_PCT"] < 30])
+                c     = pct_color(v_pp)
+                st.markdown(f"""
+                <div class='ocard' style='padding:10px 14px;margin-bottom:6px'>
+                    <div style='display:flex;align-items:center;gap:12px'>
+                        <div style='width:30px;height:30px;border-radius:7px;flex-shrink:0;
+                                    background:linear-gradient(135deg,{c}30,{c}10);
+                                    border:1px solid {c}40;color:{c};
+                                    display:grid;place-items:center;
+                                    font-size:11px;font-weight:600'>{vname[:2].upper()}</div>
+                        <div style='flex:1'>
+                            <div style='display:flex;justify-content:space-between;
+                                        margin-bottom:4px;align-items:baseline'>
+                                <span style='font-size:13px;font-weight:500;color:var(--text)'>{vname}</span>
+                                <span class='num' style='font-size:13px;font-weight:600;color:{c}'>{v_pp:.0f}%</span>
+                            </div>
+                            {progress_bar_html(v_pp, c, "4px")}
+                        </div>
+                        <div style='display:flex;gap:14px;font-size:11px;text-align:center;margin-left:8px'>
+                            <div><div class='num' style='color:var(--green);font-weight:700'>{v_tp}</div>
+                                 <div style='color:var(--text-3);font-size:9px'>TP</div></div>
+                            <div><div class='num' style='color:var(--yellow);font-weight:700'>{v_op}</div>
+                                 <div style='color:var(--text-3);font-size:9px'>60–79%</div></div>
+                            <div><div class='num' style='color:var(--red);font-weight:700'>{v_cr}</div>
+                                 <div style='color:var(--text-3);font-size:9px'>&lt;30%</div></div>
+                        </div>
+                    </div>
+                </div>""", unsafe_allow_html=True)
+
+        st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
+        section_label("Portafolio por localidad — Top 15")
+        zsumm = cli.groupby("Localidad").agg(
+            Clientes=("Cliente", "count"),
+            PP=("PORTAFOLIO_PCT", "mean"),
+            TP=("TP_SISTEMA", lambda x: (x == True).sum()),
+        ).reset_index().sort_values("PP", ascending=False).head(15)
+        for _, zrow in zsumm.iterrows():
+            pp = float(zrow["PP"])
+            c  = pct_color(pp)
+            st.markdown(f"""
+            <div style='display:flex;align-items:center;gap:12px;padding:7px 12px;
+                        border-bottom:1px solid var(--line)'>
+                <div style='min-width:120px;font-size:12.5px;color:var(--text)'>{zrow["Localidad"]}</div>
+                <div style='flex:1;max-width:260px'>
+                    {progress_bar_html(pp, c, "5px")}
+                </div>
+                <span class='num' style='font-size:12px;font-weight:600;color:{c};min-width:36px'>{pp:.0f}%</span>
+                <span style='font-size:11px;color:var(--text-3);min-width:60px'>{int(zrow["Clientes"])} clientes</span>
+                <span class='num' style='font-size:11px;color:var(--green)'>{int(zrow["TP"])} TP</span>
+            </div>""", unsafe_allow_html=True)
+
+    elif nav_page == "foco":
+        # ── PRODUCTOS FOCO ─────────────────────────────────────────────────────
+        foco_gral = foco[foco["Scope"] == "general"].head(15)
+        col_a, col_b = st.columns([1, 1.4])
+        with col_a:
+            if not foco_gral.empty:
+                st.markdown(foco_rank_list_html(foco_gral), unsafe_allow_html=True)
+        with col_b:
+            section_label("Foco por vendedora")
+            for vid_s, vname in VENDOR_NAMES.items():
+                v_fc = foco[(foco["Scope"] == "vendedor") & (foco["VendedorID"] == vid_s)].head(5)
+                if v_fc.empty:
+                    continue
+                items_html = ""
+                for _, row in v_fc.iterrows():
+                    rank = int(row.get("Rank", 0))
+                    art  = str(row.get("Articulo", f"SKU {rank}"))
+                    cli_n = int(row.get("CantClientes", 0))
+                    rc   = "var(--green)" if rank <= 3 else "var(--text-3)"
+                    items_html += (f"<div style='display:flex;justify-content:space-between;"
+                                   f"font-size:12px;padding:4px 0;border-bottom:1px solid var(--line)'>"
+                                   f"<span class='num' style='color:{rc};margin-right:8px'>{str(rank).zfill(2)}</span>"
+                                   f"<span style='flex:1;color:var(--text);overflow:hidden;text-overflow:ellipsis;"
+                                   f"white-space:nowrap'>{art}</span>"
+                                   f"<span class='num' style='color:var(--text-2);margin-left:8px'>{cli_n}</span>"
+                                   f"</div>")
+                st.markdown(f"""
+                <div style='border:1px solid var(--line);border-radius:10px;
+                            background:var(--surface);padding:12px 14px;margin-bottom:8px'>
+                    <div style='font-size:11px;font-weight:600;color:var(--text);margin-bottom:8px'>
+                        {vname[:2].upper()} &nbsp;
+                        <span style='font-weight:400;color:var(--text-3)'>{vname}</span>
+                    </div>
+                    {items_html}
+                </div>""", unsafe_allow_html=True)
 
     orbit_footer()
 
