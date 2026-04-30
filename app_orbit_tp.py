@@ -118,6 +118,15 @@ def inject_audio():
     components.html(f"""
     <script>
     (function() {{
+        // Ocultar este iframe para que no aparezca como espacio vacío
+        try {{
+            var el = window.frameElement;
+            if (el) {{
+                el.style.cssText = 'display:none!important;height:0!important;';
+                var p = el.closest('.element-container') || el.parentElement;
+                if (p) p.style.cssText = 'height:0!important;overflow:hidden!important;margin:0!important;padding:0!important;';
+            }}
+        }} catch(e) {{}}
         if (window.parent.__orbitAudioInstalled) return;
         window.parent.__orbitAudioInstalled = true;
         var s = window.parent.document.createElement('script');
@@ -232,8 +241,17 @@ def inject_css():
     [data-testid="stSidebar"] > div {{
         padding: 0 !important; gap: 0 !important; overflow-x: hidden !important;
     }}
-    [data-testid="stSidebarCollapseButton"],
-    button[data-testid="collapsedControl"] {{ display: none !important; }}
+    /* Collapse button: oculto en desktop, visible en mobile */
+    @media (min-width: 769px) {{
+        [data-testid="stSidebarCollapseButton"],
+        button[data-testid="collapsedControl"] {{ display: none !important; }}
+    }}
+    /* Iframes de inyección (height=0) — no ocupan espacio visible */
+    iframe[height="0"] {{ position: absolute !important; width: 0 !important; }}
+    .element-container:has(> div > iframe[height="0"]) {{
+        height: 0 !important; margin: 0 !important; padding: 0 !important;
+        overflow: hidden !important;
+    }}
     [data-testid="stSidebar"] .stButton > button {{
         background: transparent !important; color: var(--text-2) !important;
         border: none !important; border-radius: 7px !important;
@@ -445,9 +463,23 @@ def inject_css():
     hr {{ border-color: var(--line) !important; margin: 0.6rem 0 1rem 0 !important; }}
     /* Progress */
     .stProgress > div > div > div > div {{ background: linear-gradient(90deg, var(--green), var(--green-dim)); }}
+    /* Desktop: ocultar botón colapso sidebar (siempre visible en desktop) */
+    @media (min-width: 769px) {{
+        [data-testid="stSidebarCollapseButton"],
+        button[data-testid="collapsedControl"] {{ display: none !important; }}
+    }}
     /* Mobile */
     @media (max-width: 768px) {{
-        [data-testid="stSidebar"] {{ min-width: 200px !important; max-width: 80vw !important; }}
+        /* Sidebar colapsable con hamburger nativo de Streamlit */
+        [data-testid="stSidebar"] {{ min-width: 240px !important; max-width: 88vw !important; }}
+        /* Botón hamburger/X visible y usable */
+        [data-testid="stSidebarCollapseButton"],
+        button[data-testid="collapsedControl"] {{
+            display: flex !important; z-index: 999 !important;
+            background: var(--surface-2) !important;
+            border: 1px solid var(--line) !important;
+            color: var(--text) !important; border-radius: 7px !important;
+        }}
         .orbit-topbar {{ padding: 12px 16px !important; margin: 0 -1rem 1rem -1rem !important; flex-wrap: wrap !important; gap: 8px !important; }}
         .orbit-topbar h1 {{ font-size: 17px !important; }}
         .period-chip {{ font-size: 10px !important; padding: 4px 8px !important; }}
@@ -466,9 +498,20 @@ def inject_css():
     components.html(f"""
     <script>
     (function() {{
+        // Ocultar este iframe (evita espacio vacío visible)
+        try {{
+            var el = window.frameElement;
+            if (el) {{
+                el.style.cssText = 'display:none!important;height:0!important;';
+                var p = el.closest('.element-container') || el.parentElement;
+                if (p) p.style.cssText = 'height:0!important;overflow:hidden!important;margin:0!important;padding:0!important;';
+            }}
+        }} catch(e) {{}}
+
         var doc = window.parent.document;
         if (doc.getElementById('orbit-tp-css')) return;
-        // Google Fonts preconnect + stylesheet
+
+        // Google Fonts
         ['https://fonts.googleapis.com','https://fonts.gstatic.com'].forEach(function(h) {{
             var l = doc.createElement('link'); l.rel='preconnect'; l.href=h;
             if (h.includes('gstatic')) l.crossOrigin='';
@@ -478,11 +521,28 @@ def inject_css():
         lf.rel = 'stylesheet';
         lf.href = '{fonts_url}';
         doc.head.appendChild(lf);
+
         // Orbit CSS
         var s = doc.createElement('style');
         s.id = 'orbit-tp-css';
         s.textContent = {repr(css)};
         doc.head.appendChild(s);
+
+        // Login: animación + sonido al hacer clic en INGRESAR
+        function hookLoginBtn() {{
+            var btn = doc.querySelector('.login-btn button');
+            if (!btn) {{ setTimeout(hookLoginBtn, 400); return; }}
+            btn.addEventListener('click', function() {{
+                var mark = doc.querySelector('.orbit-mark-spin');
+                if (mark) {{
+                    mark.classList.remove('orbit-mark-launch');
+                    void mark.offsetWidth; // reflow para reiniciar animación
+                    mark.classList.add('orbit-mark-launch');
+                }}
+                if (window.playEnter) window.playEnter();
+            }});
+        }}
+        hookLoginBtn();
     }})();
     </script>
     """, height=0, scrolling=False)
@@ -666,7 +726,8 @@ def render_sidebar(role="gerencia", vendor_name="Matías Torres"):
     with st.sidebar:
         # ── Brand block ──────────────────────────────────────────────
         mark_img = (f"<img src='data:image/png;base64,{mark_b64}'"
-                    f" style='width:40px;height:40px;filter:drop-shadow(0 0 12px rgba(110,197,49,0.4));transition:transform .9s cubic-bezier(.2,.8,.2,1)'/>"
+                    f" class='orbit-mark-spin'"
+                    f" style='width:40px;height:40px;filter:drop-shadow(0 0 12px rgba(110,197,49,0.4))'/>"
                     if mark_b64 else "🎯")
         wm_img   = (f"<img src='data:image/png;base64,{wordmark_b64}'"
                     f" style='height:26px;width:auto;filter:brightness(1.1);flex-shrink:0'/>"
@@ -976,18 +1037,33 @@ def login_page():
     wordmark_b64 = get_wordmark_b64()
     pyp_logo_b64 = get_pyp_logo_b64()
 
-    # Ambient radial glow
-    st.markdown("""
-    <style>
-    .stApp {
-        background: radial-gradient(60% 50% at 50% 25%,
-            rgba(110,197,49,0.07), transparent 70%) !important;
-    }
-    [data-testid="stSidebar"] { display: none !important; }
-    [data-testid="stSidebarCollapseButton"] { display: none !important; }
-    .block-container { padding-top: 2rem !important; }
-    </style>
-    """, unsafe_allow_html=True)
+    # CSS login-específico (sidebar oculto, glow ambiental) via JS
+    import streamlit.components.v1 as components
+    components.html("""
+    <script>
+    (function() {
+        try {
+            var el = window.frameElement;
+            if (el) {
+                el.style.cssText = 'display:none!important;height:0!important;';
+                var p = el.closest('.element-container') || el.parentElement;
+                if (p) p.style.cssText = 'height:0!important;overflow:hidden!important;margin:0!important;padding:0!important;';
+            }
+        } catch(e) {}
+        var doc = window.parent.document;
+        if (doc.getElementById('orbit-login-css')) return;
+        var s = doc.createElement('style');
+        s.id = 'orbit-login-css';
+        s.textContent = `
+            .stApp { background: radial-gradient(60% 50% at 50% 25%, rgba(110,197,49,0.07), transparent 70%) !important; }
+            [data-testid="stSidebar"] { display: none !important; }
+            [data-testid="stSidebarCollapseButton"] { display: none !important; }
+            .block-container { padding-top: 2rem !important; }
+        `;
+        doc.head.appendChild(s);
+    })();
+    </script>
+    """, height=0, scrolling=False)
 
     _, cc, _ = st.columns([1, 1.15, 1])
     with cc:
@@ -1019,12 +1095,6 @@ def login_page():
                 </div>""", unsafe_allow_html=True)
 
         # ── Login card ───────────────────────────────────────────────
-        st.markdown("""
-        <div style='background:var(--surface);border:1px solid var(--line);
-                    border-radius:18px;padding:30px 32px 24px;
-                    box-shadow:0 30px 80px rgba(0,0,0,0.5),0 0 0 1px rgba(110,197,49,0.04)'>
-        </div>""", unsafe_allow_html=True)
-
         all_perfiles = ["— Seleccioná tu perfil —", "Gerencia"] + list(VENDOR_NAMES.values())
         perfil = st.selectbox("Perfil", all_perfiles, key="login_perfil", label_visibility="collapsed")
 
@@ -1308,7 +1378,7 @@ def management_page():
 
     kpi_data = [
         (c1, "port",  "Portafolio Global",  f"{pp_global:.0f}%", f"{total} clientes",                pct_color(pp_global)),
-        (c2, "tp",    "TP Sistema",          f"{tp_ok}",           f"{pct_tp:.0f}% del padrón",        GREEN if pct_tp >= 50 else YELLOW),
+        (c2, "tp",    "TP Confirmados",       f"{tp_ok}",           f"{pct_tp:.0f}% del padrón",        GREEN if pct_tp >= 50 else YELLOW),
         (c3, None,    "Objetivo TP Dist.",   f"{t_cum:.0f}%",      f"{t_acum:.0f}/{t_obj:.0f} TPs",    pct_color(t_cum)),
         (c4, "oport", "Oportunidad 60-79%", f"{n_oport}",         "clientes en zona",                  YELLOW),
         (c5, "crit",  "Críticos < 30%",     f"{n_crit}",          "requieren atención",                RED),
@@ -1344,20 +1414,9 @@ def management_page():
         render_clientes(drill_df)
         st.markdown("<hr>", unsafe_allow_html=True)
 
-    # ── Navegación por sidebar → secciones ─────────────────────────────────────
-    tab1, tab2, tab3, tab4 = st.tabs([
-        "📊  Resumen",
-        "👥  Por Vendedor",
-        "🗺️  Por Zona",
-        "🔍  Clientes",
-    ])
-
-    # Sincronizar tab con nav_page del sidebar
-    _tab_map = {"resumen": 0, "vendedores": 1, "por_zona": 2, "clientes": 3}
-    _active_idx = _tab_map.get(nav_page, 0)
-
-    # ── TAB 1: RESUMEN ──────────────────────────────────────────────────────────
-    with tab1:
+    # ── Contenido según nav del sidebar ────────────────────────────────────────
+    if nav_page in ("resumen", "", None):
+        # ── RESUMEN ────────────────────────────────────────────────────────────
         col_a, col_b = st.columns(2)
         with col_a:
             section_label("Cumplimiento objetivo por vendedor")
@@ -1395,8 +1454,8 @@ def management_page():
             if fig:
                 st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
 
-    # ── TAB 2: POR VENDEDOR ─────────────────────────────────────────────────────
-    with tab2:
+    elif nav_page == "vendedores":
+        # ── POR VENDEDOR ───────────────────────────────────────────────────────
         # Handle navigation from vendor row buttons (must set key BEFORE widget renders)
         if "mgmt_vend_pending" in st.session_state:
             pv = st.session_state.pop("mgmt_vend_pending")
@@ -1518,8 +1577,8 @@ def management_page():
             section_label(f"Clientes de {vend_sel}")
             render_clientes(v_cli)
 
-    # ── TAB 3: POR ZONA ─────────────────────────────────────────────────────────
-    with tab3:
+    elif nav_page == "por_zona":
+        # ── POR ZONA ───────────────────────────────────────────────────────────
         zonas = sorted(cli["Localidad"].dropna().unique())
         zona_opts = ["— Todas las zonas —"] + list(zonas)
 
@@ -1533,6 +1592,15 @@ def management_page():
 
         if zona_sel == "— Todas las zonas —":
             section_label("Resumen por localidad — clic en ▶ Ver para ver el detalle de clientes")
+            st.markdown(f"""
+            <div style='font-size:11px;color:var(--text-3);margin-bottom:10px;
+                        padding:7px 11px;border-left:2px solid var(--line);background:var(--surface)'>
+                ⓘ &nbsp;<b>TP confirmados</b>: clientes con TP registrado en el sistema (flag ERP,
+                independiente del % de portafolio del día). &nbsp;
+                <b>60–79%</b>: clientes en zona de oportunidad.&nbsp;
+                Un cliente puede ser TP confirmado <i>y</i> estar en 60–79% simultáneamente —
+                por eso la suma puede superar el total.
+            </div>""", unsafe_allow_html=True)
             zsumm = cli.groupby("Localidad").agg(
                 Clientes=("Cliente", "count"),
                 PP=("PORTAFOLIO_PCT", "mean"),
@@ -1563,11 +1631,11 @@ def management_page():
                             </div>
                             <div style='display:flex;gap:1.8rem;font-size:0.8rem;text-align:center'>
                                 <div><div style='color:{GREEN};font-weight:800;font-size:1.2rem'>{int(zrow["TP"])}</div>
-                                     <div style='color:{GRAY};font-size:0.65rem'>TP</div></div>
+                                     <div style='color:{GRAY};font-size:0.65rem'>TP sistem.</div></div>
                                 <div><div style='color:{YELLOW};font-weight:800;font-size:1.2rem'>{int(zrow["Oport"])}</div>
-                                     <div style='color:{GRAY};font-size:0.65rem'>Oport.</div></div>
+                                     <div style='color:{GRAY};font-size:0.65rem'>60–79%</div></div>
                                 <div><div style='color:{RED};font-weight:800;font-size:1.2rem'>{int(zrow["Criticos"])}</div>
-                                     <div style='color:{GRAY};font-size:0.65rem'>Críticos</div></div>
+                                     <div style='color:{GRAY};font-size:0.65rem'>&lt;30%</div></div>
                             </div>
                         </div>
                     </div>""", unsafe_allow_html=True)
@@ -1588,16 +1656,18 @@ def management_page():
 
             z1, z2, z3, z4, z5 = st.columns(5)
             z1.metric("Portafolio promedio", f"{z_pp:.0f}%")
-            z2.metric("TP sistema", z_tp)
+            z2.metric("TP confirmados", z_tp,
+                      help="Clientes con TP_SISTEMA=True en el ERP (flag independiente del % de portafolio)")
             z3.metric("Total clientes", len(z_cli))
-            z4.metric("Oportunidades", z_op2)
-            z5.metric("Críticos", z_crit)
+            z4.metric("En zona 60–79%", z_op2,
+                      help="Clientes con portafolio entre 60 y 79% — a un paso del TP")
+            z5.metric("Críticos <30%", z_crit)
 
             section_label(f"Clientes en {zona_sel}")
             render_clientes(z_cli)
 
-    # ── TAB 4: CLIENTES ─────────────────────────────────────────────────────────
-    with tab4:
+    elif nav_page == "clientes":
+        # ── CLIENTES ───────────────────────────────────────────────────────────
         search = st.text_input("🔍 Buscar por nombre o código",
                                placeholder="Escribí el nombre o ID del cliente...",
                                key="mgmt_search")
