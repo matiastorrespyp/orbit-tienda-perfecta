@@ -722,9 +722,15 @@ def progress_bar_html(pct, color, height="8px"):
                     height:100%;border-radius:20px;transition:width 0.8s ease'></div>
     </div>"""
 
-def kpi_card_html(label, value, sub, color, card_class="", is_active=False):
-    """KPI hero card — estilo referencia con top accent bar y mono numbers."""
-    active_style = f"border-color:rgba(110,197,49,0.5);box-shadow:0 0 0 1px rgba(110,197,49,0.2);" if is_active else ""
+def kpi_card_html(label, value, sub, color, card_class="", is_active=False, trend=None, trend_dir="up"):
+    """KPI hero card — estilo referencia con top accent bar, mono numbers y trend opcional."""
+    active_style = "border-color:rgba(110,197,49,0.5);box-shadow:0 0 0 1px rgba(110,197,49,0.2);" if is_active else ""
+    if trend:
+        arr = "▲" if trend_dir == "up" else "▼"
+        tc  = "var(--green)" if trend_dir == "up" else "var(--red)"
+        trend_html = f"<span class='num' style='color:{tc};font-size:11.5px;margin-right:6px'>{arr} {trend}</span>"
+    else:
+        trend_html = ""
     return f"""
     <div class='kpi-card {card_class}'
          style='border-top:2px solid {color};{active_style}'>
@@ -732,7 +738,196 @@ def kpi_card_html(label, value, sub, color, card_class="", is_active=False):
                     text-transform:uppercase;font-weight:500;margin-bottom:12px'>{label}</div>
         <div class='num' style='font-size:30px;font-weight:600;letter-spacing:-0.5px;
                                  line-height:1;margin-bottom:8px;color:{color}'>{value}</div>
-        <div style='color:var(--text-3);font-size:12px'>{sub}</div>
+        <div style='color:var(--text-3);font-size:12px'>{trend_html}{sub}</div>
+    </div>"""
+
+
+def vendor_ranking_table_html(obj_vend):
+    """Tabla de ranking de vendedoras — estilo diseño referencia."""
+    sorted_df = obj_vend.sort_values("CUMPLIMIENTO_PCT", ascending=False)
+    rows_html = ""
+    for i, (_, vrow) in enumerate(sorted_df.iterrows()):
+        vid_s  = str(vrow["_VID"])
+        vname  = VENDOR_NAMES.get(vid_s, vid_s)
+        cm     = float(vrow.get("CUMPLIMIENTO_PCT", 0))
+        ob     = float(vrow.get("OBJETIVO", 0))
+        ac     = float(vrow.get("ACUMULADO", 0))
+        real_h = int(vrow.get("REAL_DIA", 0))
+        c      = pct_color(cm)
+        initials = vname[:2].upper()
+        bar_w    = min(cm, 100)
+        rows_html += f"""
+        <div class='row-hover' style='display:grid;grid-template-columns:34px 1.3fr 1fr 0.6fr 0.55fr;
+             gap:10px;padding:11px 20px;align-items:center;border-bottom:1px solid var(--line)'>
+            <div class='num' style='font-size:11px;color:var(--text-3)'>{str(i+1).zfill(2)}</div>
+            <div style='display:flex;align-items:center;gap:9px'>
+                <div style='width:29px;height:29px;border-radius:7px;flex-shrink:0;
+                            background:linear-gradient(135deg,{c}30,{c}10);
+                            border:1px solid {c}40;color:{c};
+                            display:grid;place-items:center;
+                            font-size:10.5px;font-weight:600'>{initials}</div>
+                <div>
+                    <div style='font-size:12.5px;font-weight:500;color:var(--text)'>{vname}</div>
+                    <div style='font-size:10px;color:var(--text-3)'>Obj. {ob:.0f} TPs</div>
+                </div>
+            </div>
+            <div>
+                <div style='display:flex;justify-content:space-between;margin-bottom:4px;align-items:baseline'>
+                    <span class='num' style='font-size:12.5px;font-weight:600;color:{c}'>{cm:.1f}%</span>
+                    <span style='font-size:10px;color:var(--text-4)'>meta 80</span>
+                </div>
+                <div style='height:4px;background:#1A1D1A;border-radius:99px;overflow:hidden'>
+                    <div style='width:{bar_w:.0f}%;height:100%;background:{c}'></div>
+                </div>
+            </div>
+            <div class='num' style='text-align:right;font-size:12.5px;color:var(--text)'>{ac:.0f}</div>
+            <div class='num' style='text-align:right;font-size:12.5px;color:var(--text-2)'>{real_h}</div>
+        </div>"""
+    return f"""
+    <div style='border:1px solid var(--line);border-radius:12px;background:var(--surface);overflow:hidden'>
+        <div style='padding:16px 20px 14px'>
+            <div style='font-size:10px;color:var(--text-3);letter-spacing:1.5px;text-transform:uppercase;
+                        font-weight:600;margin-bottom:4px'>Performance vendedoras</div>
+            <div style='font-size:15px;font-weight:600;letter-spacing:-0.2px'>Cumplimiento por vendedora</div>
+        </div>
+        <div style='display:grid;grid-template-columns:34px 1.3fr 1fr 0.6fr 0.55fr;
+             gap:10px;padding:8px 20px;border-top:1px solid var(--line);border-bottom:1px solid var(--line);
+             font-size:10px;color:var(--text-3);letter-spacing:1.2px;text-transform:uppercase;font-weight:600'>
+            <div>#</div><div>Vendedora</div><div>Cumplimiento</div>
+            <div style='text-align:right'>Acumulado</div>
+            <div style='text-align:right'>Real hoy</div>
+        </div>
+        {rows_html}
+    </div>"""
+
+
+def donut_portafolio_html(cli_df):
+    """Donut SVG de distribución de portafolio — estilo diseño referencia."""
+    total       = len(cli_df)
+    alcanzado   = len(cli_df[cli_df["PORTAFOLIO_PCT"] >= 80])
+    oportunidad = len(cli_df[(cli_df["PORTAFOLIO_PCT"] >= 60) & (cli_df["PORTAFOLIO_PCT"] < 80)])
+    recuperar   = len(cli_df[(cli_df["PORTAFOLIO_PCT"] >= 30) & (cli_df["PORTAFOLIO_PCT"] < 60)])
+    critico     = len(cli_df[cli_df["PORTAFOLIO_PCT"] < 30])
+    tp_pct      = alcanzado / total * 100 if total else 0
+
+    segments = [
+        (alcanzado,   "#6EC531", "TP alcanzado",  "≥ 80%"),
+        (oportunidad, "#F0C000", "Oportunidad",   "60–79%"),
+        (recuperar,   "#E87A00", "Recuperar",     "30–59%"),
+        (critico,     "#E84B4B", "Crítico",       "< 30%"),
+    ]
+
+    size  = 172
+    cx    = cy = size / 2
+    r     = 64
+    th    = 22
+    circ  = 2 * 3.14159265 * r
+    offset = 0
+    arcs_svg = ""
+    for val, color, _, _ in segments:
+        pct     = val / total if total else 0
+        arc_len = pct * circ
+        gap     = circ - arc_len
+        arcs_svg += (
+            f'<circle cx="{cx:.1f}" cy="{cy:.1f}" r="{r}" fill="none" '
+            f'stroke="{color}" stroke-width="{th}" '
+            f'stroke-dasharray="{arc_len:.2f} {gap:.2f}" '
+            f'stroke-dashoffset="{-offset:.2f}" '
+            f'transform="rotate(-90 {cx:.1f} {cy:.1f})" '
+            f'style="filter:drop-shadow(0 0 5px {color}55)"/>'
+        )
+        offset += arc_len
+
+    legend_html = ""
+    for val, color, label, range_str in segments:
+        p = val / total * 100 if total else 0
+        legend_html += f"""
+        <div style='display:flex;align-items:center;gap:8px'>
+            <span style='width:7px;height:7px;border-radius:2px;flex-shrink:0;
+                         background:{color};box-shadow:0 0 7px {color}80'></span>
+            <div style='flex:1;min-width:0'>
+                <div style='display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:1px'>
+                    <span style='color:var(--text)'>{label}</span>
+                    <span class='num' style='color:var(--text-2)'>{val}</span>
+                </div>
+                <div style='display:flex;justify-content:space-between;font-size:10px;color:var(--text-3)'>
+                    <span>{range_str}</span>
+                    <span class='num'>{p:.1f}%</span>
+                </div>
+            </div>
+        </div>"""
+
+    return f"""
+    <div style='border:1px solid var(--line);border-radius:12px;background:var(--surface);padding:18px;height:100%'>
+        <div style='display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:16px'>
+            <div>
+                <div style='font-size:10px;color:var(--text-3);letter-spacing:1.5px;text-transform:uppercase;
+                            font-weight:600;margin-bottom:4px'>Estado de portafolio</div>
+                <div style='font-size:15px;font-weight:600'>Distribución de clientes</div>
+            </div>
+            <span style='display:inline-flex;align-items:center;gap:5px;padding:2px 9px;
+                         border-radius:99px;font-size:11px;font-weight:500;white-space:nowrap;
+                         color:#6EC531;background:rgba(110,197,49,0.10);border:1px solid rgba(110,197,49,0.28)'>
+                <span style='width:5px;height:5px;border-radius:99px;background:#6EC531;display:inline-block'></span>
+                {tp_pct:.0f}% en TP
+            </span>
+        </div>
+        <div style='display:flex;align-items:center;gap:18px'>
+            <svg width="{size}" height="{size}" viewBox="0 0 {size} {size}" style='flex-shrink:0'>
+                <circle cx="{cx:.1f}" cy="{cy:.1f}" r="{r}" fill="none"
+                        stroke="#1A1D1A" stroke-width="{th}"/>
+                {arcs_svg}
+                <text x="{cx:.1f}" y="{cy - 8:.1f}" text-anchor="middle"
+                      fill="#F4F6F4" font-size="22" font-weight="600"
+                      font-family="JetBrains Mono, monospace">{total}</text>
+                <text x="{cx:.1f}" y="{cy + 10:.1f}" text-anchor="middle"
+                      fill="#6B716B" font-size="10">clientes</text>
+            </svg>
+            <div style='flex:1;display:flex;flex-direction:column;gap:10px'>
+                {legend_html}
+            </div>
+        </div>
+    </div>"""
+
+
+def foco_rank_list_html(foco_df):
+    """Rank list de productos foco — estilo diseño referencia."""
+    if foco_df.empty:
+        return ""
+    max_cli   = foco_df["CantClientes"].max()
+    rows_html = ""
+    for _, row in foco_df.iterrows():
+        rank   = int(row.get("Rank", 0))
+        art    = str(row.get("Articulo", row.get("Producto", f"SKU {rank}")))
+        cli    = int(row.get("CantClientes", 0))
+        w      = (cli / max_cli * 100) if max_cli else 0
+        is_top = rank <= 3
+        rc     = "var(--green)" if is_top else "var(--text-3)"
+        bar_bg = "linear-gradient(90deg,var(--green),var(--green-dim))" if is_top else "#3A4A30"
+        rows_html += f"""
+        <div style='display:grid;grid-template-columns:22px 1fr 52px;gap:9px;align-items:center;padding:5px 0'>
+            <span class='num' style='font-size:10.5px;font-weight:500;color:{rc}'>{str(rank).zfill(2)}</span>
+            <div>
+                <div style='font-size:12px;color:var(--text);margin-bottom:3px;
+                            overflow:hidden;text-overflow:ellipsis;white-space:nowrap'>{art}</div>
+                <div style='height:4px;background:#1A1D1A;border-radius:99px;overflow:hidden'>
+                    <div style='width:{w:.0f}%;height:100%;background:{bar_bg}'></div>
+                </div>
+            </div>
+            <div class='num' style='text-align:right;font-size:11.5px;color:var(--text-2)'>
+                {cli}&nbsp;<span style='font-size:9.5px;color:var(--text-4)'>cli</span>
+            </div>
+        </div>"""
+    return f"""
+    <div style='border:1px solid var(--line);border-radius:12px;background:var(--surface);overflow:hidden'>
+        <div style='padding:16px 18px 12px'>
+            <div style='font-size:10px;color:var(--text-3);letter-spacing:1.5px;text-transform:uppercase;
+                        font-weight:600;margin-bottom:4px'>Top SKUs por penetración</div>
+            <div style='font-size:15px;font-weight:600'>Productos foco</div>
+        </div>
+        <div style='padding:0 18px 16px;display:flex;flex-direction:column;gap:3px'>
+            {rows_html}
+        </div>
     </div>"""
 
 def sku_pills(lst, css_class="sku-g"):
@@ -1434,17 +1629,17 @@ def management_page():
     c1, c2, c3, c4, c5 = st.columns(5)
 
     kpi_data = [
-        (c1, "port",  "Portafolio Global",  f"{pp_global:.0f}%", f"{total} clientes",                pct_color(pp_global)),
-        (c2, "tp",    "TP Confirmados",       f"{tp_ok}",           f"{pct_tp:.0f}% del padrón",        GREEN if pct_tp >= 50 else YELLOW),
-        (c3, None,    "Objetivo TP Dist.",   f"{t_cum:.0f}%",      f"{t_acum:.0f}/{t_obj:.0f} TPs",    pct_color(t_cum)),
-        (c4, "oport", "Oportunidad 60-79%", f"{n_oport}",         "clientes en zona",                  YELLOW),
-        (c5, "crit",  "Críticos < 30%",     f"{n_crit}",          "requieren atención",                RED),
+        (c1, "port",  "Portafolio Global",   f"{pp_global:.0f}%", f"{total} clientes",             pct_color(pp_global), None,           ""),
+        (c2, "tp",    "Clientes con TP ✓",   f"{tp_ok}",           f"del padrón activo",            GREEN if pct_tp>=50 else YELLOW, f"{pct_tp:.0f}%", "up"),
+        (c3, None,    "Objetivo TP Dist.",   f"{t_cum:.0f}%",      f"{t_acum:.0f}/{t_obj:.0f} TPs", pct_color(t_cum), None,             ""),
+        (c4, "oport", "Oportunidad 60-79%", f"{n_oport}",         "clientes en zona",              YELLOW, None,                        ""),
+        (c5, "crit",  "Críticos < 30%",     f"{n_crit}",          "requieren atención",            RED, None,                           ""),
     ]
 
-    for col, dk, lbl, val, sub, color in kpi_data:
-        is_active = (drill == dk) if dk else False
+    for col, dk, lbl, val, sub, color, trend, td in kpi_data:
+        is_active  = (drill == dk) if dk else False
         card_class = f"kpi-{dk}" if dk else ""
-        col.markdown(kpi_card_html(lbl, val, sub, color, card_class, is_active), unsafe_allow_html=True)
+        col.markdown(kpi_card_html(lbl, val, sub, color, card_class, is_active, trend, td), unsafe_allow_html=True)
         if dk:
             # Botón invisible sobre la card (ver CSS :has selector)
             if col.button("", key=f"drill_{dk}", use_container_width=True):
@@ -1474,97 +1669,109 @@ def management_page():
     # ── Contenido según nav del sidebar ────────────────────────────────────────
     if nav_page in ("resumen", "", None):
         # ── RESUMEN ────────────────────────────────────────────────────────────
-        col_a, col_b = st.columns(2)
+        # Fila 1: Tabla de ranking vendedoras + Donut SVG portafolio
+        col_a, col_b = st.columns([1.35, 1])
         with col_a:
-            section_label("Cumplimiento objetivo por vendedor")
-            st.plotly_chart(chart_vendor_cumplimiento(obj_vend),
-                            use_container_width=True, config={"displayModeBar": False})
+            st.markdown(vendor_ranking_table_html(obj_vend), unsafe_allow_html=True)
         with col_b:
-            section_label("Distribución de portafolio")
-            st.plotly_chart(chart_portafolio_pie(cli),
-                            use_container_width=True, config={"displayModeBar": False})
+            st.markdown(donut_portafolio_html(cli), unsafe_allow_html=True)
 
-        # ── Facturación TP vs No TP ────────────────────────────────────────────
-        has_fact = "FACTURACION_CLIENTE" in cli.columns
-        has_kg   = "KILOS_CLIENTE" in cli.columns
-        if has_fact:
-            cli_tp    = cli[cli["TP_SISTEMA"] == True]
-            cli_notp  = cli[cli["TP_SISTEMA"] != True]
-            fact_tp   = pd.to_numeric(cli_tp["FACTURACION_CLIENTE"],   errors="coerce").dropna()
-            fact_notp = pd.to_numeric(cli_notp["FACTURACION_CLIENTE"], errors="coerce").dropna()
-            avg_tp   = fact_tp.mean()   if len(fact_tp)   else 0
-            avg_notp = fact_notp.mean() if len(fact_notp) else 0
-            diff_pct = (avg_tp / avg_notp - 1) * 100 if avg_notp else 0
+        st.markdown("<div style='height:10px'></div>", unsafe_allow_html=True)
 
-            kg_tp_avg = kg_notp_avg = diff_kg_pct = None
-            if has_kg:
-                kg_tp   = pd.to_numeric(cli_tp["KILOS_CLIENTE"],   errors="coerce").dropna()
-                kg_notp = pd.to_numeric(cli_notp["KILOS_CLIENTE"], errors="coerce").dropna()
-                kg_tp_avg   = kg_tp.mean()   if len(kg_tp)   else 0
-                kg_notp_avg = kg_notp.mean() if len(kg_notp) else 0
-                diff_kg_pct = (kg_tp_avg / kg_notp_avg - 1) * 100 if kg_notp_avg else 0
+        # Fila 2: Productos foco (izq) + Facturación TP vs No TP (der)
+        foco_gral = foco[foco["Scope"] == "general"].head(10)
+        has_fact  = "FACTURACION_CLIENTE" in cli.columns
+        has_kg    = "KILOS_CLIENTE" in cli.columns
 
-            def _kg_row(val, color):
-                if val is None:
-                    return ""
-                return f"""<div style='margin-top:8px;padding-top:8px;border-top:1px solid var(--line)'>
-                    <div style='font-size:9px;color:var(--text-3);text-transform:uppercase;
-                                letter-spacing:1.2px;margin-bottom:3px'>Promedio kg</div>
-                    <div class='num' style='font-size:18px;font-weight:600;color:{color}'>
-                        {val:,.1f} <span style='font-size:12px;font-weight:400'>kg</span>
-                    </div></div>"""
+        col_c, col_d = st.columns([1, 1.4])
+        with col_c:
+            if not foco_gral.empty:
+                st.markdown(foco_rank_list_html(foco_gral), unsafe_allow_html=True)
+        with col_d:
+            if has_fact:
+                cli_tp    = cli[cli["TP_SISTEMA"] == True]
+                cli_notp  = cli[cli["TP_SISTEMA"] != True]
+                fact_tp   = pd.to_numeric(cli_tp["FACTURACION_CLIENTE"],   errors="coerce").dropna()
+                fact_notp = pd.to_numeric(cli_notp["FACTURACION_CLIENTE"], errors="coerce").dropna()
+                avg_tp    = fact_tp.mean()   if len(fact_tp)   else 0
+                avg_notp  = fact_notp.mean() if len(fact_notp) else 0
+                diff_pct  = (avg_tp / avg_notp - 1) * 100 if avg_notp else 0
 
-            section_label("Facturación promedio mensual — TP vs No TP")
-            fa, fb = st.columns(2)
-            with fa:
+                kg_tp_avg = kg_notp_avg = diff_kg_pct = None
+                if has_kg:
+                    kg_tp       = pd.to_numeric(cli_tp["KILOS_CLIENTE"],   errors="coerce").dropna()
+                    kg_notp     = pd.to_numeric(cli_notp["KILOS_CLIENTE"], errors="coerce").dropna()
+                    kg_tp_avg   = kg_tp.mean()   if len(kg_tp)   else 0
+                    kg_notp_avg = kg_notp.mean() if len(kg_notp) else 0
+                    diff_kg_pct = (kg_tp_avg / kg_notp_avg - 1) * 100 if kg_notp_avg else 0
+
+                def _kg_row(val, color):
+                    if val is None:
+                        return ""
+                    return (f"<div style='margin-top:8px;padding-top:8px;border-top:1px solid var(--line)'>"
+                            f"<div style='font-size:9px;color:var(--text-3);text-transform:uppercase;"
+                            f"letter-spacing:1.2px;margin-bottom:3px'>Promedio kg</div>"
+                            f"<div class='num' style='font-size:18px;font-weight:600;color:{color}'>"
+                            f"{val:,.1f} <span style='font-size:12px;font-weight:400'>kg</span></div></div>")
+
+                diff_kg_str = ""
+                if diff_kg_pct is not None:
+                    diff_kg_str = (f" &nbsp;·&nbsp; <span class='num' style='color:var(--green);"
+                                   f"font-weight:700'>+{diff_kg_pct:.0f}%</span> más en kg")
+
                 st.markdown(f"""
-                <div class='ocard ocard-green' style='padding:1rem 1.2rem'>
-                    <div style='font-size:10px;color:var(--text-3);text-transform:uppercase;
-                                letter-spacing:1.4px;font-weight:600;margin-bottom:10px'>
-                        Cliente con TP &nbsp;<span style='opacity:.5'>({len(cli_tp)} clientes)</span>
+                <div style='border:1px solid var(--line);border-radius:12px;
+                            background:var(--surface);padding:18px'>
+                    <div style='font-size:10px;color:var(--text-3);letter-spacing:1.5px;
+                                text-transform:uppercase;font-weight:600;margin-bottom:4px'>
+                        Impacto comercial</div>
+                    <div style='font-size:15px;font-weight:600;margin-bottom:14px'>
+                        Facturación promedio — TP vs No TP</div>
+                    <div style='display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px'>
+                        <div style='padding:14px;border:1px solid rgba(110,197,49,0.28);border-radius:10px;
+                                    background:rgba(110,197,49,0.05);border-left:3px solid var(--green)'>
+                            <div style='font-size:10px;color:var(--text-3);text-transform:uppercase;
+                                        letter-spacing:1.4px;font-weight:600;margin-bottom:8px'>
+                                Con TP &nbsp;<span style='opacity:.5'>({len(cli_tp)})</span></div>
+                            <div style='font-size:9px;color:var(--text-3);text-transform:uppercase;
+                                        letter-spacing:1.2px;margin-bottom:3px'>Promedio $</div>
+                            <div class='num' style='font-size:22px;font-weight:700;color:var(--green)'>
+                                {fmt_ars(avg_tp)}</div>
+                            {_kg_row(kg_tp_avg, "var(--green)")}
+                        </div>
+                        <div style='padding:14px;border:1px solid rgba(240,192,0,0.28);border-radius:10px;
+                                    background:rgba(240,192,0,0.05);border-left:3px solid var(--yellow)'>
+                            <div style='font-size:10px;color:var(--text-3);text-transform:uppercase;
+                                        letter-spacing:1.4px;font-weight:600;margin-bottom:8px'>
+                                Sin TP &nbsp;<span style='opacity:.5'>({len(cli_notp)})</span></div>
+                            <div style='font-size:9px;color:var(--text-3);text-transform:uppercase;
+                                        letter-spacing:1.2px;margin-bottom:3px'>Promedio $</div>
+                            <div class='num' style='font-size:22px;font-weight:700;color:var(--yellow)'>
+                                {fmt_ars(avg_notp)}</div>
+                            {_kg_row(kg_notp_avg, "var(--yellow)")}
+                        </div>
                     </div>
-                    <div style='font-size:9px;color:var(--text-3);text-transform:uppercase;
-                                letter-spacing:1.2px;margin-bottom:3px'>Promedio $</div>
-                    <div class='num' style='font-size:26px;font-weight:700;color:var(--green)'>
-                        {fmt_ars(avg_tp)}
+                    <div style='background:linear-gradient(135deg,rgba(110,197,49,0.08),rgba(110,197,49,0.03));
+                                border:1px solid var(--green-line);border-radius:9px;
+                                padding:10px 14px;display:flex;align-items:center;gap:12px'>
+                        <span style='font-size:16px'>📈</span>
+                        <div>
+                            <div style='font-size:9.5px;color:var(--text-3);text-transform:uppercase;
+                                        letter-spacing:1.3px;font-weight:600;margin-bottom:2px'>
+                                Brecha TP vs No TP · mes en curso</div>
+                            <div style='font-size:13px;color:var(--text)'>
+                                Cliente TP compra
+                                <span class='num' style='color:var(--green);font-weight:700;font-size:15px'>
+                                    +{diff_pct:.0f}%
+                                </span> más en ${diff_kg_str}
+                            </div>
+                        </div>
                     </div>
-                    {_kg_row(kg_tp_avg, "var(--green)")}
-                </div>""", unsafe_allow_html=True)
-            with fb:
-                st.markdown(f"""
-                <div class='ocard ocard-yellow' style='padding:1rem 1.2rem'>
-                    <div style='font-size:10px;color:var(--text-3);text-transform:uppercase;
-                                letter-spacing:1.4px;font-weight:600;margin-bottom:10px'>
-                        Cliente sin TP &nbsp;<span style='opacity:.5'>({len(cli_notp)} clientes)</span>
-                    </div>
-                    <div style='font-size:9px;color:var(--text-3);text-transform:uppercase;
-                                letter-spacing:1.2px;margin-bottom:3px'>Promedio $</div>
-                    <div class='num' style='font-size:26px;font-weight:700;color:var(--yellow)'>
-                        {fmt_ars(avg_notp)}
-                    </div>
-                    {_kg_row(kg_notp_avg, "var(--yellow)")}
                 </div>""", unsafe_allow_html=True)
 
-            # Brecha TP vs No TP
-            diff_kg_str = f" &nbsp;·&nbsp; <span class='num' style='color:var(--green);font-weight:700'>+{diff_kg_pct:.0f}%</span> más en kg" if diff_kg_pct is not None else ""
-            st.markdown(f"""
-            <div style='background:linear-gradient(135deg,rgba(110,197,49,0.08),rgba(110,197,49,0.03));
-                        border:1px solid var(--green-line);border-radius:10px;
-                        padding:10px 16px;margin-top:6px;
-                        display:flex;align-items:center;gap:14px;flex-wrap:wrap'>
-                <span style='font-size:18px'>📈</span>
-                <div>
-                    <div style='font-size:10px;color:var(--text-3);text-transform:uppercase;
-                                letter-spacing:1.3px;font-weight:600;margin-bottom:2px'>Brecha TP vs No TP · mes en curso</div>
-                    <div style='font-size:13px;color:var(--text)'>
-                        Un cliente TP compra
-                        <span class='num' style='color:var(--green);font-weight:700;font-size:15px'>
-                            +{diff_pct:.0f}%
-                        </span> más en ${diff_kg_str}
-                    </div>
-                </div>
-            </div>""", unsafe_allow_html=True)
+        st.markdown("<div style='height:10px'></div>", unsafe_allow_html=True)
 
+        # Fila 3: Objetivos por taxonomía
         section_label("Objetivos por taxonomía")
         t_cols = st.columns(len(obj_tax))
         for col, (_, row) in zip(t_cols, obj_tax.iterrows()):
@@ -1575,22 +1782,15 @@ def management_page():
             rd = float(row.get("REAL_DIA", 0))
             col.markdown(f"""
             <div class='ocard' style='text-align:center;border-top:3px solid {c}'>
-                <div style='color:{GRAY};font-size:0.65rem;text-transform:uppercase;
+                <div style='color:var(--text-3);font-size:0.65rem;text-transform:uppercase;
                             letter-spacing:1.5px;margin-bottom:0.3rem'>
                     Taxonomía {row["TAXONOMIA"]}</div>
-                <div style='font-size:2.5rem;font-weight:900;color:{c}'>{cm:.0f}%</div>
-                <div style='color:{GRAY};font-size:0.75rem'>{ac:.0f} / {ob:.0f} TPs</div>
+                <div class='num' style='font-size:2.4rem;font-weight:700;color:{c}'>{cm:.0f}%</div>
+                <div style='color:var(--text-3);font-size:0.75rem'>{ac:.0f} / {ob:.0f} TPs</div>
                 {progress_bar_html(cm, c, "6px")}
-                <div style='color:{GRAY};font-size:0.7rem;margin-top:0.3rem'>
+                <div style='color:var(--text-3);font-size:0.7rem;margin-top:0.3rem'>
                     Real hoy: {rd:.0f}</div>
             </div>""", unsafe_allow_html=True)
-
-        section_label("Top 10 productos foco — distribuidora")
-        foco_gral = foco[foco["Scope"] == "general"].head(10)
-        if not foco_gral.empty:
-            fig = chart_foco_bar(foco_gral)
-            if fig:
-                st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
 
     elif nav_page == "vendedores":
         # ── POR VENDEDOR ───────────────────────────────────────────────────────
