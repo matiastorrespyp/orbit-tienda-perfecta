@@ -1184,20 +1184,34 @@ def login_page():
 def vendor_page(vendor_id, vendor_name):
     inject_css()
     inject_audio()
-    cli, obj_tax, obj_vend, oport, foco = load_data()
+
+    try:
+        cli, obj_tax, obj_vend, oport, foco = load_data()
+    except Exception as e:
+        render_sidebar(role="vendor", vendor_name=vendor_name)
+        render_topbar(f"Mi Panel — {vendor_name}", "Error al cargar datos")
+        st.error(f"No se pudieron cargar los datos: {e}")
+        st.info("Intentá recargar la página. Si el error persiste, avisale a Matías.")
+        orbit_footer()
+        return
 
     vid     = str(vendor_id)
     mis     = cli[cli["Vendedor_ID"] == vid].copy()
-    mi_op   = oport[oport["VendedorID"] == vid].copy()
-    mi_fc   = foco[(foco["Scope"] == "vendedor") & (foco["VendedorID"] == vid)].copy()
-    obj_row = obj_vend[obj_vend["_VID"] == vid]
+    mi_op   = oport[oport["VendedorID"] == vid].copy() if "VendedorID" in oport.columns else pd.DataFrame()
+    mi_fc   = (foco[(foco["Scope"] == "vendedor") & (foco["VendedorID"] == vid)].copy()
+               if "Scope" in foco.columns and "VendedorID" in foco.columns else pd.DataFrame())
+    obj_row = obj_vend[obj_vend["_VID"] == vid] if "_VID" in obj_vend.columns else pd.DataFrame()
 
-    obj_val  = float(obj_row["OBJETIVO"].iloc[0])  if len(obj_row) else 0
-    acum_val = float(obj_row["ACUMULADO"].iloc[0]) if len(obj_row) else 0
-    cumpl    = float(obj_row["CUMPLIMIENTO_PCT"].iloc[0]) if len(obj_row) else 0
+    def _safe_float(df, col, idx=0, default=0.0):
+        try: return float(df[col].iloc[idx])
+        except Exception: return default
 
-    pct_port   = mis["PORTAFOLIO_PCT"].mean() if len(mis) else 0
-    tp_sistema = int((mis["TP_SISTEMA"] == True).sum())
+    obj_val  = _safe_float(obj_row, "OBJETIVO")
+    acum_val = _safe_float(obj_row, "ACUMULADO")
+    cumpl    = _safe_float(obj_row, "CUMPLIMIENTO_PCT")
+
+    pct_port   = float(mis["PORTAFOLIO_PCT"].mean()) if len(mis) else 0.0
+    tp_sistema = int((mis["TP_SISTEMA"] == True).sum()) if "TP_SISTEMA" in mis.columns else 0
     tp_eligible= int(mis["TP_ELIGIBLE"].sum()) if "TP_ELIGIBLE" in mis.columns else len(mis)
     n_oport    = len(mi_op)
 
