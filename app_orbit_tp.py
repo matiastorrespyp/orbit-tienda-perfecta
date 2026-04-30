@@ -627,7 +627,7 @@ def load_data():
         # Convertir columnas numéricas que vienen como string desde GSheets
         for df, cols in [
             (cli,      ["PORTAFOLIO_PCT", "FALTAN_80_N", "FALTAN_100_N",
-                        "FACTURACION_CLIENTE", "KILOS_CLIENTE"]),
+                        "FACTURACION_CLIENTE", "KILOS_CLIENTE", "TP_ELIGIBLE"]),
             (obj_vend, ["OBJETIVO", "ACUMULADO", "REAL_DIA", "FALTANTE",
                         "CUMPLIMIENTO_PCT", "_VEND_ID_TXT"]),
             (obj_tax,  ["OBJETIVO", "ACUMULADO", "CUMPLIMIENTO_PCT", "REAL_DIA"]),
@@ -1207,174 +1207,187 @@ def login_page():
 # VENDOR PAGE
 # ═══════════════════════════════════════════════════════════════════════════════
 def vendor_page(vendor_id, vendor_name):
+    import traceback as _tb
     inject_css()
     inject_audio()
 
     try:
+        # ── Carga de datos ───────────────────────────────────────────────────────
         cli, obj_tax, obj_vend, oport, foco = load_data()
-    except Exception as e:
+
+        vid     = str(vendor_id)
+
+        # Filtros por vendedor — columna puede llamarse Vendedor_ID o VendedorID
+        _vcol = "Vendedor_ID" if "Vendedor_ID" in cli.columns else (
+                "VendedorID"  if "VendedorID"  in cli.columns else None)
+        mis = cli[cli[_vcol] == vid].copy() if _vcol else pd.DataFrame()
+
+        mi_op   = oport[oport["VendedorID"] == vid].copy() if "VendedorID" in oport.columns else pd.DataFrame()
+        mi_fc   = (foco[(foco["Scope"] == "vendedor") & (foco["VendedorID"] == vid)].copy()
+                   if "Scope" in foco.columns and "VendedorID" in foco.columns else pd.DataFrame())
+        obj_row = obj_vend[obj_vend["_VID"] == vid] if "_VID" in obj_vend.columns else pd.DataFrame()
+
+        def _safe_float(df, col, idx=0, default=0.0):
+            try: return float(df[col].iloc[idx])
+            except Exception: return default
+
+        obj_val  = _safe_float(obj_row, "OBJETIVO")
+        acum_val = _safe_float(obj_row, "ACUMULADO")
+        cumpl    = _safe_float(obj_row, "CUMPLIMIENTO_PCT")
+
+        pct_port    = float(mis["PORTAFOLIO_PCT"].mean()) if len(mis) else 0.0
+        tp_sistema  = int((mis["TP_SISTEMA"] == True).sum()) if "TP_SISTEMA" in mis.columns else 0
+        _te_series  = pd.to_numeric(mis["TP_ELIGIBLE"], errors="coerce").fillna(0) if "TP_ELIGIBLE" in mis.columns else None
+        tp_eligible = int(_te_series.sum()) if _te_series is not None else len(mis)
+        n_oport     = len(mi_op)
+
+        # ── Sidebar + Topbar
         render_sidebar(role="vendor", vendor_name=vendor_name)
-        render_topbar(f"Mi Panel — {vendor_name}", "Error al cargar datos")
-        st.error(f"No se pudieron cargar los datos: {e}")
-        st.info("Intentá recargar la página. Si el error persiste, avisale a Matías.")
-        orbit_footer()
-        return
+        render_topbar(f"Mi Panel — {vendor_name}", f"Zona {vendor_name}")
 
-    vid     = str(vendor_id)
-    mis     = cli[cli["Vendedor_ID"] == vid].copy()
-    mi_op   = oport[oport["VendedorID"] == vid].copy() if "VendedorID" in oport.columns else pd.DataFrame()
-    mi_fc   = (foco[(foco["Scope"] == "vendedor") & (foco["VendedorID"] == vid)].copy()
-               if "Scope" in foco.columns and "VendedorID" in foco.columns else pd.DataFrame())
-    obj_row = obj_vend[obj_vend["_VID"] == vid] if "_VID" in obj_vend.columns else pd.DataFrame()
+        # ── KPI strip
+        c1, c2, c3, c4 = st.columns(4)
+        pc = pct_color(pct_port)
+        cc = pct_color(cumpl)
 
-    def _safe_float(df, col, idx=0, default=0.0):
-        try: return float(df[col].iloc[idx])
-        except Exception: return default
+        c1.markdown(kpi_card_html("Portafolio promedio", f"{pct_port:.0f}%",
+                                  f"{len(mis)} clientes totales", pc), unsafe_allow_html=True)
+        c2.markdown(kpi_card_html("Objetivo TP", f"{cumpl:.0f}%",
+                                  f"{acum_val:.0f} de {obj_val:.0f} TPs", cc), unsafe_allow_html=True)
+        c3.markdown(kpi_card_html("⚡ Oportunidad hoy", str(n_oport),
+                                  "clientes en 60–79%", YELLOW), unsafe_allow_html=True)
+        c4.markdown(kpi_card_html("TP Sistema", str(tp_sistema),
+                                  f"de {tp_eligible} elegibles", GREEN), unsafe_allow_html=True)
 
-    obj_val  = _safe_float(obj_row, "OBJETIVO")
-    acum_val = _safe_float(obj_row, "ACUMULADO")
-    cumpl    = _safe_float(obj_row, "CUMPLIMIENTO_PCT")
-
-    pct_port   = float(mis["PORTAFOLIO_PCT"].mean()) if len(mis) else 0.0
-    tp_sistema = int((mis["TP_SISTEMA"] == True).sum()) if "TP_SISTEMA" in mis.columns else 0
-    tp_eligible= int(mis["TP_ELIGIBLE"].sum()) if "TP_ELIGIBLE" in mis.columns else len(mis)
-    n_oport    = len(mi_op)
-
-    # ── Sidebar + Topbar
-    render_sidebar(role="vendor", vendor_name=vendor_name)
-    render_topbar(f"Mi Panel — {vendor_name}", f"Zona {vendor_name}")
-
-    # ── KPI strip
-    c1, c2, c3, c4 = st.columns(4)
-    pc = pct_color(pct_port)
-    cc = pct_color(cumpl)
-
-    c1.markdown(kpi_card_html("Portafolio promedio", f"{pct_port:.0f}%",
-                              f"{len(mis)} clientes totales", pc), unsafe_allow_html=True)
-    c2.markdown(kpi_card_html("Objetivo TP",f"{cumpl:.0f}%",
-                              f"{acum_val:.0f} de {obj_val:.0f} TPs", cc), unsafe_allow_html=True)
-    c3.markdown(kpi_card_html("⚡ Oportunidad hoy", str(n_oport),
-                              "clientes en 60–79%", YELLOW), unsafe_allow_html=True)
-    c4.markdown(kpi_card_html("TP Sistema", str(tp_sistema),
-                              f"de {tp_eligible} elegibles", GREEN), unsafe_allow_html=True)
-
-    # ── Objetivo progress bar
-    st.markdown(f"""
-    <div style='margin:0.2rem 0 0.8rem 0'>
-        <div style='display:flex;justify-content:space-between;color:{GRAY};
-                    font-size:0.72rem;margin-bottom:0.3rem'>
-            <span>Progreso objetivo mensual</span>
-            <span style='color:{cc};font-weight:700'>{cumpl:.1f}% alcanzado</span>
+        # ── Objetivo progress bar
+        st.markdown(f"""
+        <div style='margin:0.2rem 0 0.8rem 0'>
+            <div style='display:flex;justify-content:space-between;color:{GRAY};
+                        font-size:0.72rem;margin-bottom:0.3rem'>
+                <span>Progreso objetivo mensual</span>
+                <span style='color:{cc};font-weight:700'>{cumpl:.1f}% alcanzado</span>
+            </div>
+            {progress_bar_html(cumpl, cc, "10px")}
+            <div style='display:flex;justify-content:space-between;color:{GRAY};
+                        font-size:0.68rem;margin-top:0.2rem'>
+                <span>0</span><span style='color:{GREEN}'>Meta: 80%</span><span>100%</span>
+            </div>
         </div>
-        {progress_bar_html(cumpl, cc, "10px")}
-        <div style='display:flex;justify-content:space-between;color:{GRAY};
-                    font-size:0.68rem;margin-top:0.2rem'>
-            <span>0</span><span style='color:{GREEN}'>Meta: 80%</span><span>100%</span>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
+        """, unsafe_allow_html=True)
 
-    # ── Tabs
-    tab1, tab2, tab3 = st.tabs(["⚡  Mis oportunidades", "📋  Todos mis clientes", "🎯  Foco del día"])
+        # ── Tabs
+        tab1, tab2, tab3 = st.tabs(["⚡  Mis oportunidades", "📋  Todos mis clientes", "🎯  Foco del día"])
 
-    # TAB 1 – Oportunidades 60-79%
-    with tab1:
-        if mi_op.empty:
-            st.info("Sin clientes en zona de oportunidad para la zona activa.")
-        else:
-            st.markdown(f"""
-            <div style='color:{GRAY};font-size:0.85rem;margin:0.8rem 0'>
-                <b style='color:{YELLOW}'>{n_oport} clientes</b> a un paso del TP —
-                priorizalos hoy para maximizar tu resultado
-            </div>""", unsafe_allow_html=True)
-
-            for _, row in mi_op.sort_values("PortafolioPct", ascending=False).iterrows():
-                pct   = float(row.get("PortafolioPct", 0))
-                col   = pct_color(pct)
-                f80   = int(row.get("Faltan80", 0)) if pd.notna(row.get("Faltan80")) else 0
-                skus80_raw = str(row.get("SKUsFaltan80", ""))
-                skus80 = [s.strip() for s in skus80_raw.split(" | ") if s.strip()] if pd.notna(row.get("SKUsFaltan80")) else []
-                tp_a  = str(row.get("TP_Aplica", "")).upper() == "SI"
-                loc   = str(row.get("Localidad", ""))
-                icon  = "⚡" if pct >= 70 else "⚠️"
-
-                with st.expander(f"{icon} {row['RazonSocial']}  ·  {pct:.0f}%  ·  {loc}"):
-                    d1, d2, d3 = st.columns([1, 1, 2])
-                    d1.metric("Portafolio", f"{pct:.0f}%")
-                    d2.metric("SKUs para 80%", f80)
-                    with d3:
-                        badge = "<span class='bdg-g'>TP Aplica ✓</span>" if tp_a else "<span class='bdg-r'>No aplica TP</span>"
-                        st.markdown(f"""
-                        <div style='padding-top:1.8rem'>
-                            {badge}
-                            <div style='color:{GRAY};font-size:0.75rem;margin-top:0.3rem'>
-                                📍 {row.get("Direccion","")}
-                            </div>
-                        </div>""", unsafe_allow_html=True)
-
-                    st.markdown(progress_bar_html(pct, col, "7px"), unsafe_allow_html=True)
-
-                    if skus80:
-                        st.markdown(f"<div style='color:{ORANGE};font-size:0.73rem;font-weight:700;"
-                                    f"margin:0.6rem 0 0.3rem;text-transform:uppercase;letter-spacing:1px'>"
-                                    f"Vendé esto para llegar al 80%</div>", unsafe_allow_html=True)
-                        st.markdown(sku_pills(skus80, "sku-o"), unsafe_allow_html=True)
-
-    # TAB 2 – Todos los clientes por banda
-    with tab2:
-        def render_band(label, color, df_band, icon):
-            if df_band.empty: return
-            st.markdown(f"""
-            <div style='display:flex;align-items:center;gap:0.6rem;margin:1.2rem 0 0.5rem'>
-                <div style='width:5px;height:1.2rem;background:{color};border-radius:3px'></div>
-                <span style='color:{color};font-weight:800;font-size:0.9rem'>{icon} {label}</span>
-                <span style='color:{GRAY};font-size:0.8rem'>({len(df_band)} clientes)</span>
-            </div>""", unsafe_allow_html=True)
-            render_clientes(df_band)
-
-        render_band("TP alcanzado (≥ 80%)",  GREEN,  mis[mis["PORTAFOLIO_PCT"] >= 80], "✅")
-        render_band("Oportunidad (60–79%)",   YELLOW, mis[(mis["PORTAFOLIO_PCT"] >= 60) & (mis["PORTAFOLIO_PCT"] < 80)], "⚡")
-        render_band("Recuperar (30–59%)",     ORANGE, mis[(mis["PORTAFOLIO_PCT"] >= 30) & (mis["PORTAFOLIO_PCT"] < 60)], "⚠️")
-        render_band("Crítico (< 30%)",        RED,    mis[mis["PORTAFOLIO_PCT"] < 30], "🔴")
-
-    # TAB 3 – Foco del día
-    with tab3:
-        if mi_fc.empty:
-            st.info("Sin datos de foco de productos disponibles.")
-        else:
-            st.markdown(f"""
-            <div style='color:{GRAY};font-size:0.85rem;margin-bottom:1rem'>
-                Los productos que más veces faltan en tus clientes de oportunidad —
-                <b style='color:{GREEN}'>llevá stock de estos hoy</b>
-            </div>""", unsafe_allow_html=True)
-
-            max_cant = mi_fc["CantClientes"].max()
-            medals = ["🥇", "🥈", "🥉"]
-
-            for _, row in mi_fc.sort_values("Rank").iterrows():
-                rank = int(row["Rank"])
-                art  = row["Articulo"]
-                cant = int(row["CantClientes"])
-                bw   = max(8, int(cant / max_cant * 100))
-                med  = medals[rank - 1] if rank <= 3 else f"#{rank}"
-                col  = GREEN if rank <= 3 else DGREEN
-
+        # TAB 1 – Oportunidades 60-79%
+        with tab1:
+            if mi_op.empty:
+                st.info("Sin clientes en zona de oportunidad para la zona activa.")
+            else:
                 st.markdown(f"""
-                <div class='ocard' style='padding:0.8rem 1.2rem;margin-bottom:0.4rem'>
-                    <div style='display:flex;align-items:center;gap:1rem'>
-                        <div style='font-size:1.6rem;min-width:2.4rem;text-align:center'>{med}</div>
-                        <div style='flex:1'>
-                            <div style='font-weight:700;font-size:0.95rem;color:{WHITE}'>{art}</div>
-                            {progress_bar_html(bw, col, "5px")}
-                        </div>
-                        <div style='text-align:right;min-width:3rem'>
-                            <div style='font-size:1.5rem;font-weight:900;color:{col}'>{cant}</div>
-                            <div style='color:{GRAY};font-size:0.65rem;text-transform:uppercase'>clientes</div>
-                        </div>
-                    </div>
+                <div style='color:{GRAY};font-size:0.85rem;margin:0.8rem 0'>
+                    <b style='color:{YELLOW}'>{n_oport} clientes</b> a un paso del TP —
+                    priorizalos hoy para maximizar tu resultado
                 </div>""", unsafe_allow_html=True)
 
-    orbit_footer()
+                _sort_col = "PortafolioPct" if "PortafolioPct" in mi_op.columns else (
+                            mi_op.columns[0] if len(mi_op.columns) else "PortafolioPct")
+                for _, row in mi_op.sort_values(_sort_col, ascending=False).iterrows():
+                    pct   = float(row.get("PortafolioPct", 0))
+                    col   = pct_color(pct)
+                    f80   = int(row.get("Faltan80", 0)) if pd.notna(row.get("Faltan80")) else 0
+                    skus80_raw = str(row.get("SKUsFaltan80", ""))
+                    skus80 = [s.strip() for s in skus80_raw.split(" | ") if s.strip()] if pd.notna(row.get("SKUsFaltan80")) else []
+                    tp_a  = str(row.get("TP_Aplica", "")).upper() == "SI"
+                    loc   = str(row.get("Localidad", ""))
+                    icon  = "⚡" if pct >= 70 else "⚠️"
+
+                    with st.expander(f"{icon} {row.get('RazonSocial', '—')}  ·  {pct:.0f}%  ·  {loc}"):
+                        d1, d2, d3 = st.columns([1, 1, 2])
+                        d1.metric("Portafolio", f"{pct:.0f}%")
+                        d2.metric("SKUs para 80%", f80)
+                        with d3:
+                            badge = "<span class='bdg-g'>TP Aplica ✓</span>" if tp_a else "<span class='bdg-r'>No aplica TP</span>"
+                            st.markdown(f"""
+                            <div style='padding-top:1.8rem'>
+                                {badge}
+                                <div style='color:{GRAY};font-size:0.75rem;margin-top:0.3rem'>
+                                    📍 {row.get("Direccion","")}
+                                </div>
+                            </div>""", unsafe_allow_html=True)
+
+                        st.markdown(progress_bar_html(pct, col, "7px"), unsafe_allow_html=True)
+
+                        if skus80:
+                            st.markdown(f"<div style='color:{ORANGE};font-size:0.73rem;font-weight:700;"
+                                        f"margin:0.6rem 0 0.3rem;text-transform:uppercase;letter-spacing:1px'>"
+                                        f"Vendé esto para llegar al 80%</div>", unsafe_allow_html=True)
+                            st.markdown(sku_pills(skus80, "sku-o"), unsafe_allow_html=True)
+
+        # TAB 2 – Todos los clientes por banda
+        with tab2:
+            def render_band(label, color, df_band, icon):
+                if df_band.empty: return
+                st.markdown(f"""
+                <div style='display:flex;align-items:center;gap:0.6rem;margin:1.2rem 0 0.5rem'>
+                    <div style='width:5px;height:1.2rem;background:{color};border-radius:3px'></div>
+                    <span style='color:{color};font-weight:800;font-size:0.9rem'>{icon} {label}</span>
+                    <span style='color:{GRAY};font-size:0.8rem'>({len(df_band)} clientes)</span>
+                </div>""", unsafe_allow_html=True)
+                render_clientes(df_band)
+
+            render_band("TP alcanzado (≥ 80%)",  GREEN,  mis[mis["PORTAFOLIO_PCT"] >= 80], "✅")
+            render_band("Oportunidad (60–79%)",   YELLOW, mis[(mis["PORTAFOLIO_PCT"] >= 60) & (mis["PORTAFOLIO_PCT"] < 80)], "⚡")
+            render_band("Recuperar (30–59%)",     ORANGE, mis[(mis["PORTAFOLIO_PCT"] >= 30) & (mis["PORTAFOLIO_PCT"] < 60)], "⚠️")
+            render_band("Crítico (< 30%)",        RED,    mis[mis["PORTAFOLIO_PCT"] < 30], "🔴")
+
+        # TAB 3 – Foco del día
+        with tab3:
+            if mi_fc.empty:
+                st.info("Sin datos de foco de productos disponibles.")
+            else:
+                st.markdown(f"""
+                <div style='color:{GRAY};font-size:0.85rem;margin-bottom:1rem'>
+                    Los productos que más veces faltan en tus clientes de oportunidad —
+                    <b style='color:{GREEN}'>llevá stock de estos hoy</b>
+                </div>""", unsafe_allow_html=True)
+
+                _cant_s  = pd.to_numeric(mi_fc["CantClientes"], errors="coerce").fillna(1)
+                max_cant = _cant_s.max() or 1
+                medals   = ["🥇", "🥈", "🥉"]
+
+                for _, row in mi_fc.sort_values("Rank").iterrows():
+                    rank = int(pd.to_numeric(row.get("Rank", 99), errors="coerce") or 99)
+                    art  = str(row.get("Articulo", "—"))
+                    cant = int(pd.to_numeric(row.get("CantClientes", 0), errors="coerce") or 0)
+                    bw   = max(8, int(cant / max_cant * 100))
+                    med  = medals[rank - 1] if rank <= 3 else f"#{rank}"
+                    col  = GREEN if rank <= 3 else DGREEN
+
+                    st.markdown(f"""
+                    <div class='ocard' style='padding:0.8rem 1.2rem;margin-bottom:0.4rem'>
+                        <div style='display:flex;align-items:center;gap:1rem'>
+                            <div style='font-size:1.6rem;min-width:2.4rem;text-align:center'>{med}</div>
+                            <div style='flex:1'>
+                                <div style='font-weight:700;font-size:0.95rem;color:{WHITE}'>{art}</div>
+                                {progress_bar_html(bw, col, "5px")}
+                            </div>
+                            <div style='text-align:right;min-width:3rem'>
+                                <div style='font-size:1.5rem;font-weight:900;color:{col}'>{cant}</div>
+                                <div style='color:{GRAY};font-size:0.65rem;text-transform:uppercase'>clientes</div>
+                            </div>
+                        </div>
+                    </div>""", unsafe_allow_html=True)
+
+        orbit_footer()
+
+    except Exception as _e:
+        render_sidebar(role="vendor", vendor_name=vendor_name)
+        render_topbar(f"Mi Panel — {vendor_name}", "Error")
+        st.error(f"⚠️ Error inesperado en el panel: {_e}")
+        with st.expander("🔍 Detalle técnico (enviáselo a Matías)"):
+            st.code(_tb.format_exc())
+        st.info("Intentá recargar la página o cerrá sesión y volvé a ingresar.")
+        orbit_footer()
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
