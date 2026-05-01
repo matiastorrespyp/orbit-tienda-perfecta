@@ -1,0 +1,16 @@
+[theme]
+# Tokens nativos Orbit · Tienda Perfecta — alineados con design-reference/orbit-tp/HANDOFF.md
+base                   = "dark"
+primaryColor           = "#6EC531"
+backgroundColor        = "#0E0F0E"
+secondaryBackgroundColor = "#16181A"
+textColor              = "#E7EAE6"
+font                   = "sans serif"
+
+[server]
+headless         = true
+runOnSave        = true
+enableCORS       = false
+
+[browser]
+gatherUsageStats = false

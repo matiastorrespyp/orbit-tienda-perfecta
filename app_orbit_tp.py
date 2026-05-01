@@ -29,6 +29,10 @@ PYP_LOGO = os.path.join(ASSETS, "pyp-logo.png")
 PYP_MARK = os.path.join(ASSETS, "pyp-mark.png")
 CURSOR   = os.path.join(ASSETS, "cursor-dorito.png")
 AUDIO_JS = os.path.join(ASSETS, "audio.js")
+THEME_CSS = os.path.join(ASSETS, "orbit_tp_theme.css")
+
+# Build tag — confirma que la app corre con el rediseño Orbit aplicado
+ORBIT_BUILD = "UI_BUILD_ORBIT_TP_REDIGN_2026_05_01"
 
 # ─── Spanish days ──────────────────────────────────────────────────────────────
 _DIAS_ES = {
@@ -139,7 +143,11 @@ def inject_audio():
 
 # ─── CSS ───────────────────────────────────────────────────────────────────────
 def inject_css():
-    """Inyecta CSS en window.parent.document via JS (bypasa sanitización de Streamlit)."""
+    """Inyecta CSS en window.parent.document via JS (bypasa sanitización de Streamlit).
+
+    Carga primero desde assets/orbit_tp_theme.css (archivo externo editable).
+    Si el archivo no existe, usa el CSS inline como fallback (backwards compat).
+    """
     import streamlit.components.v1 as components
 
     cursor_b64 = get_cursor_b64()
@@ -150,8 +158,16 @@ def inject_css():
     else:
         cur_auto, cur_ptr, cur_txt = "auto", "pointer", "text"
 
-    # Construimos el CSS como string Python (las llaves CSS son literales aquí)
-    css = f"""
+    # Preferir archivo externo si existe (mantenibilidad)
+    if os.path.exists(THEME_CSS):
+        with open(THEME_CSS, encoding="utf-8") as _f:
+            css = (_f.read()
+                   .replace("__CUR_AUTO__", cur_auto)
+                   .replace("__CUR_PTR__",  cur_ptr)
+                   .replace("__CUR_TXT__",  cur_txt))
+    else:
+        # Fallback inline (CSS antiguo, mismo contenido) — preserva la app si falta el .css
+        css = f"""
     :root {{
         --bg:         #0A0B0A;
         --bg-1:       #0E100E;
@@ -976,8 +992,10 @@ def section_label(text):
     st.markdown(f"<div class='section-label'>{text}</div>", unsafe_allow_html=True)
 
 def orbit_footer():
-    st.markdown("<div class='orbit-footer'>Orbit © 2026 · Propiedad de Torres Matías</div>",
-                unsafe_allow_html=True)
+    st.markdown(
+        f"<div class='orbit-footer'>Orbit © 2026 · Propiedad de Torres Matías"
+        f"<span class='orbit-build-tag'>{ORBIT_BUILD}</span></div>",
+        unsafe_allow_html=True)
 
 def render_sidebar(role="gerencia", vendor_name="Matías Torres"):
     """Sidebar fija estilo referencia — branding + nav + footer."""
