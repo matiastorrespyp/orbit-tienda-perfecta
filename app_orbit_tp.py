@@ -331,6 +331,19 @@ def inject_css():
         cursor: pointer !important; position: relative !important;
         z-index: 100 !important; padding: 0 !important;
     }}
+    /* Invisible overlay buttons on filter chips */
+    .element-container:has(.filter-chip) + .element-container .stButton > button {{
+        background: transparent !important; border: none !important;
+        box-shadow: none !important; outline: none !important;
+        width: 100% !important; min-height: 38px !important;
+        margin-top: -44px !important; opacity: 0 !important;
+        cursor: pointer !important; position: relative !important;
+        z-index: 100 !important; padding: 0 !important;
+    }}
+    .filter-chip:hover {{
+        filter: brightness(1.15);
+        transform: translateY(-1px);
+    }}
     /* Buttons */
     .stButton > button {{
         background: transparent !important; color: var(--text-3) !important;
@@ -589,17 +602,42 @@ def _gsheets_client():
     import gspread
     from google.oauth2.credentials import Credentials
     from google.auth.transport.requests import Request as GRequest
-    s = st.secrets["google"]
-    creds = Credentials(
-        token=None,
-        refresh_token=s["refresh_token"],
-        token_uri=s.get("token_uri", "https://oauth2.googleapis.com/token"),
-        client_id=s["client_id"],
-        client_secret=s["client_secret"],
-        scopes=["https://www.googleapis.com/auth/spreadsheets"],
-    )
-    creds.refresh(GRequest())
-    return gspread.authorize(creds), s["spreadsheet_id"]
+    try:
+        s = st.secrets["google"]
+        creds = Credentials(
+            token=None,
+            refresh_token=s["refresh_token"],
+            token_uri=s.get("token_uri", "https://oauth2.googleapis.com/token"),
+            client_id=s["client_id"],
+            client_secret=s["client_secret"],
+            scopes=["https://www.googleapis.com/auth/spreadsheets"],
+        )
+        creds.refresh(GRequest())
+        return gspread.authorize(creds), s["spreadsheet_id"]
+    except Exception as e:
+        msg = str(e)
+        if "invalid_grant" in msg or "expired" in msg.lower() or "revoked" in msg.lower():
+            st.markdown("""
+            <div style='border:1px solid var(--red);background:rgba(232,75,75,0.08);
+                        border-radius:12px;padding:18px 22px;margin:30px auto;max-width:680px'>
+                <div style='font-size:11px;color:var(--red);letter-spacing:1.5px;
+                            text-transform:uppercase;font-weight:700;margin-bottom:6px'>
+                    🔒 Sesión de Google Sheets expirada</div>
+                <div style='font-size:14px;color:var(--text);line-height:1.55;margin-bottom:10px'>
+                    El <b>refresh_token</b> de Google fue revocado o expiró.
+                    La app no puede leer datos hasta que se regenere.</div>
+                <div style='font-size:12.5px;color:var(--text-2);line-height:1.55'>
+                    <b>Cómo arreglarlo:</b><br>
+                    1. En la PC local, ejecutar el script de OAuth para obtener un nuevo
+                       <code style='color:var(--green)'>refresh_token</code><br>
+                    2. Ir a <b>Streamlit Cloud → Settings → Secrets</b><br>
+                    3. Reemplazar el campo <code style='color:var(--green)'>google.refresh_token</code>
+                       con el valor nuevo<br>
+                    4. Guardar y refrescar esta página
+                </div>
+            </div>""", unsafe_allow_html=True)
+            st.stop()
+        raise
 
 
 def _gsheet_to_df(spreadsheet, tab_name: str) -> pd.DataFrame:
@@ -1646,9 +1684,25 @@ def management_page():
     n_oport   = len(oport)
     n_crit    = len(cli[cli["PORTAFOLIO_PCT"] < 30])
 
-    t_obj  = obj_vend["OBJETIVO"].sum()
-    t_acum = obj_vend["ACUMULADO"].sum()
-    t_cum  = t_acum / t_obj * 100 if t_obj else 0
+    t_obj    = obj_vend["OBJETIVO"].sum()
+    t_acum   = obj_vend["ACUMULADO"].sum()
+    t_cum    = t_acum / t_obj * 100 if t_obj else 0
+    tps_hoy  = int(obj_vend["REAL_DIA"].sum()) if "REAL_DIA" in obj_vend.columns else 0
+
+    # Facturación total (mes en curso) — suma de FACTURACION_CLIENTE
+    fact_total = 0.0
+    if "FACTURACION_CLIENTE" in cli.columns:
+        fact_total = pd.to_numeric(cli["FACTURACION_CLIENTE"], errors="coerce").fillna(0).sum()
+
+    def _fmt_compact_ars(v):
+        try:
+            v = float(v)
+        except Exception:
+            return "—"
+        if v >= 1_000_000_000: return f"${v/1_000_000_000:,.2f}B".replace(",", ".")
+        if v >= 1_000_000:     return f"${v/1_000_000:,.2f}M".replace(",", ".")
+        if v >= 1_000:         return f"${v/1_000:,.1f}K".replace(",", ".")
+        return f"${v:,.0f}".replace(",", ".")
 
     # ── Sidebar + Topbar ────────────────────────────────────────────────────────
     render_sidebar(role="gerencia", vendor_name=st.session_state.get("vendor_name", "Matías Torres"))
@@ -1670,27 +1724,50 @@ def management_page():
         "crit":  f"Clientes críticos < 30% — {n_crit} clientes",
     }
 
-    # ── Hero KPI cards (clickables — siempre visibles) ──────────────────────────
-    drill = st.session_state.get("mgmt_drill")
-    c1, c2, c3, c4, c5 = st.columns(5)
-
-    kpi_data = [
-        (c1, "port",  "Portafolio Global",   f"{pp_global:.0f}%", f"{total} clientes",             pct_color(pp_global), None,           ""),
-        (c2, "tp",    "Clientes con TP ✓",   f"{tp_ok}",           f"del padrón activo",            GREEN if pct_tp>=50 else YELLOW, f"{pct_tp:.0f}%", "up"),
-        (c3, None,    "Objetivo TP Dist.",   f"{t_cum:.0f}%",      f"{t_acum:.0f}/{t_obj:.0f} TPs", pct_color(t_cum), None,             ""),
-        (c4, "oport", "Oportunidad 60-79%", f"{n_oport}",         "clientes en zona",              YELLOW, None,                        ""),
-        (c5, "crit",  "Críticos < 30%",     f"{n_crit}",          "requieren atención",            RED, None,                           ""),
+    # ── Hero KPIs (4 tarjetas — diseño referencia) ─────────────────────────────
+    c1, c2, c3, c4 = st.columns(4)
+    kpi_hero = [
+        (c1, "Cumplimiento mensual", f"{t_cum:.1f}%",          pct_color(t_cum),
+            f"{int(t_acum)}/{int(t_obj)} TPs", None, ""),
+        (c2, "Facturación acumulada", _fmt_compact_ars(fact_total), GREEN,
+            f"{total} clientes activos", None, ""),
+        (c3, "TPs del día",            f"{tps_hoy}",            GREEN if tps_hoy > 0 else GRAY,
+            "logrados hoy",             None, ""),
+        (c4, "Clientes con TP ✓",     f"{tp_ok}",              GREEN if pct_tp >= 50 else YELLOW,
+            f"de {total} activos",      f"{pct_tp:.0f}%", "up"),
     ]
+    for col, lbl, val, color, sub, trend, td in kpi_hero:
+        col.markdown(kpi_card_html(lbl, val, sub, color, "", False, trend, td),
+                     unsafe_allow_html=True)
 
-    for col, dk, lbl, val, sub, color, trend, td in kpi_data:
-        is_active  = (drill == dk) if dk else False
-        card_class = f"kpi-{dk}" if dk else ""
-        col.markdown(kpi_card_html(lbl, val, sub, color, card_class, is_active, trend, td), unsafe_allow_html=True)
-        if dk:
-            # Botón invisible sobre la card (ver CSS :has selector)
-            if col.button("", key=f"drill_{dk}", use_container_width=True):
-                st.session_state["mgmt_drill"] = None if is_active else dk
-                st.rerun()
+    # ── Filter chips (drill-down acotado) ──────────────────────────────────────
+    drill = st.session_state.get("mgmt_drill")
+    st.markdown("<div style='height:6px'></div>", unsafe_allow_html=True)
+    fc1, fc2, fc3, fc4, fc5 = st.columns([1, 1, 1, 1, 2.5])
+    chips = [
+        (fc1, "port",  f"⊟  Portafolio {pp_global:.0f}%",   pct_color(pp_global)),
+        (fc2, "tp",    f"✓  TP {tp_ok}",                     GREEN),
+        (fc3, "oport", f"◐  Oport. {n_oport}",               YELLOW),
+        (fc4, "crit",  f"!  Críticos {n_crit}",              RED),
+    ]
+    for col, dk, lbl, color in chips:
+        is_active = (drill == dk)
+        bg  = f"{color}22" if is_active else "transparent"
+        bd  = color if is_active else "var(--line)"
+        col.markdown(f"""
+        <div class='filter-chip' style='display:flex;align-items:center;justify-content:center;gap:6px;
+                    padding:7px 10px;border:1px solid {bd};border-radius:99px;
+                    background:{bg};color:{color};font-size:11.5px;font-weight:600;
+                    cursor:pointer;transition:all .2s'>
+            {lbl}
+        </div>""", unsafe_allow_html=True)
+        if col.button("", key=f"drill_{dk}", use_container_width=True):
+            st.session_state["mgmt_drill"] = None if is_active else dk
+            st.rerun()
+    fc5.markdown(
+        "<div style='font-size:11px;color:var(--text-3);padding:10px 0 0 12px'>"
+        "Click en un chip para filtrar el padrón completo</div>",
+        unsafe_allow_html=True)
 
     # ── Drill-down panel ────────────────────────────────────────────────────────
     drill = st.session_state.get("mgmt_drill")
