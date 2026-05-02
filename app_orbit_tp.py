@@ -33,6 +33,7 @@ THEME_CSS = os.path.join(ASSETS, "orbit_tp_theme.css")
 
 # Build tag — confirma que la app corre con el rediseño Orbit aplicado
 ORBIT_BUILD = "UI_BUILD_ORBIT_TP_REDIGN_2026_05_01"
+_HTML_FIX   = "HTML_FIX_ST_HTML_2026_05_02"  # marcador: st.html() reemplaza st.markdown para tablas
 
 # ─── Spanish days ──────────────────────────────────────────────────────────────
 _DIAS_ES = {
@@ -994,7 +995,8 @@ def section_label(text):
 def orbit_footer():
     st.markdown(
         f"<div class='orbit-footer'>Orbit © 2026 · Propiedad de Torres Matías"
-        f"<span class='orbit-build-tag'>{ORBIT_BUILD}</span></div>",
+        f"<span class='orbit-build-tag'>{ORBIT_BUILD}</span>"
+        f"<span class='orbit-build-tag' style='margin-left:6px;background:rgba(110,197,49,0.18);color:#6EC531'>{_HTML_FIX}</span></div>",
         unsafe_allow_html=True)
 
 def render_sidebar(role="gerencia", vendor_name="Matías Torres"):
@@ -1813,9 +1815,9 @@ def management_page():
         # Fila 1: Tabla de ranking vendedoras + Donut SVG portafolio
         col_a, col_b = st.columns([1.35, 1])
         with col_a:
-            st.markdown(vendor_ranking_table_html(obj_vend), unsafe_allow_html=True)
+            st.html(vendor_ranking_table_html(obj_vend))
         with col_b:
-            st.markdown(donut_portafolio_html(cli), unsafe_allow_html=True)
+            st.html(donut_portafolio_html(cli))
 
         st.markdown("<div style='height:10px'></div>", unsafe_allow_html=True)
 
@@ -1827,7 +1829,7 @@ def management_page():
         col_c, col_d = st.columns([1, 1.4])
         with col_c:
             if not foco_gral.empty:
-                st.markdown(foco_rank_list_html(foco_gral), unsafe_allow_html=True)
+                st.html(foco_rank_list_html(foco_gral))
         with col_d:
             if has_fact:
                 cli_tp    = cli[cli["TP_SISTEMA"] == True]
@@ -2173,7 +2175,7 @@ def management_page():
         # ── PORTAFOLIO ─────────────────────────────────────────────────────────
         col_a, col_b = st.columns([1, 1.3])
         with col_a:
-            st.markdown(donut_portafolio_html(cli), unsafe_allow_html=True)
+            st.html(donut_portafolio_html(cli))
         with col_b:
             # Portafolio por vendedora
             section_label("Portafolio promedio por vendedora")
@@ -2241,7 +2243,7 @@ def management_page():
         col_a, col_b = st.columns([1, 1.4])
         with col_a:
             if not foco_gral.empty:
-                st.markdown(foco_rank_list_html(foco_gral), unsafe_allow_html=True)
+                st.html(foco_rank_list_html(foco_gral))
         with col_b:
             section_label("Foco por vendedora")
             for vid_s, vname in VENDOR_NAMES.items():
