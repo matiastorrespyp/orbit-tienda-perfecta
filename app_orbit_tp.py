@@ -852,7 +852,7 @@ def vendor_ranking_table_html(obj_vend):
             <div style='text-align:right'>Real hoy</div>
         </div>
         {rows_html}
-    </div>"""
+    </div>""".strip()
 
 
 def donut_portafolio_html(cli_df):
@@ -941,7 +941,7 @@ def donut_portafolio_html(cli_df):
                 {legend_html}
             </div>
         </div>
-    </div>"""
+    </div>""".strip()
 
 
 def foco_rank_list_html(foco_df):
@@ -982,7 +982,7 @@ def foco_rank_list_html(foco_df):
         <div style='padding:0 18px 16px;display:flex;flex-direction:column;gap:3px'>
             {rows_html}
         </div>
-    </div>"""
+    </div>""".strip()
 
 def sku_pills(lst, css_class="sku-g"):
     if not lst: return ""
