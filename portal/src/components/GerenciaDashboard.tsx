@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { Home, Users, Target, FileText, LogOut, RefreshCw, Settings, Search, Bell, ChevronDown, ChevronRight, ArrowUp, ArrowDown, Check, MapPin, Menu, X } from 'lucide-react';
 import type { Cliente, Foco, PdfEntry, ObjetivoResumen, FacturacionComparativa } from '../lib/data';
 
@@ -17,7 +17,7 @@ function pctBand(p: number) {
   if (p >= 80) return { label: 'TP',          color: '#6EC531' };
   if (p >= 60) return { label: 'Oportunidad', color: '#F0C000' };
   if (p >= 30) return { label: 'Recuperar',   color: '#E87A00' };
-  return             { label: 'Crítico',       color: '#E84B4B' };
+  return             { label: 'CrÃ­tico',       color: '#E84B4B' };
 }
 
 function PctBar({ pct, color }: { pct: number; color: string }) {
@@ -92,8 +92,12 @@ export default function GerenciaDashboard({ clientes, focos, pdfs, vendorNames, 
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [search,      setSearch]      = useState('');
 
-  const fecha = clientes[0]?.Fecha ?? '—';
-  const dia   = clientes[0]?.Dia   ?? '—';
+  const latestCliente = clientes.length > 0
+    ? clientes.reduce((max, c) => String(c.Fecha) > String(max.Fecha) ? c : max, clientes[0])
+    : null;
+
+  const fecha = latestCliente?.Fecha ?? '-';
+  const dia   = latestCliente?.Dia   ?? '-';
   const totalC = clientes.length;
   const avgPct = totalC > 0 ? clientes.reduce((s, c) => s + c.PortafolioPct, 0) / totalC : 0;
   const conTP    = clientes.filter(c => c.TP_Sistema === 'SI').length;
@@ -143,7 +147,7 @@ export default function GerenciaDashboard({ clientes, focos, pdfs, vendorNames, 
       <div style={{ padding: '20px 18px 16px', display: 'flex', alignItems: 'center', gap: 10 }}>
         <img src="/assets/orbit-mark.png" alt="" className="orbit-mark"
              style={{ width: 40, height: 40, flexShrink: 0, filter: 'drop-shadow(0 0 12px rgba(110,197,49,0.35))', transition: 'transform .9s cubic-bezier(.2,.8,.2,1), filter .3s' }}/>
-        <img src="/assets/orbit-wordmark.png" alt="Orbit · Tienda Perfecta"
+        <img src="/assets/orbit-wordmark.png" alt="Orbit Â· Tienda Perfecta"
              style={{ height: 28, width: 'auto', flexShrink: 0, filter: 'invert(1) brightness(1.1)' }}/>
         <div style={{ width: 1, height: 26, background: 'var(--line)', marginLeft: 2 }}/>
         <img src="/assets/pyp-mark.png" alt="P&P" className="pyp-mark"
@@ -154,14 +158,14 @@ export default function GerenciaDashboard({ clientes, focos, pdfs, vendorNames, 
       <div style={{ margin: '0 14px 14px', padding: '10px 12px', border: '1px solid var(--line)', borderRadius: 9, background: 'var(--surface)', display: 'flex', alignItems: 'center', gap: 10 }}>
         <div style={{ width: 28, height: 28, borderRadius: 6, background: '#222722', display: 'grid', placeItems: 'center', color: 'var(--green)', fontWeight: 600, fontSize: 12 }}>MT</div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 12, fontWeight: 500 }}>Matías Torres</div>
+          <div style={{ fontSize: 12, fontWeight: 500 }}>MatÃ­as Torres</div>
           <div style={{ fontSize: 10.5, color: 'var(--text-3)' }}>Gerencia comercial</div>
         </div>
       </div>
 
       {/* Nav */}
       <nav style={{ padding: '0 10px', display: 'flex', flexDirection: 'column', gap: 1 }}>
-        <div style={{ fontSize: 10, color: 'var(--text-4)', letterSpacing: 1.6, textTransform: 'uppercase', padding: '8px 10px 6px' }}>Operación</div>
+        <div style={{ fontSize: 10, color: 'var(--text-4)', letterSpacing: 1.6, textTransform: 'uppercase', padding: '8px 10px 6px' }}>OperaciÃ³n</div>
         {navItems.map(({ k, label, Icon }) => {
           const isActive = active === k;
           return (
@@ -195,7 +199,7 @@ export default function GerenciaDashboard({ clientes, focos, pdfs, vendorNames, 
       <div style={{ margin: '12px 14px', padding: 14, border: '1px solid var(--line)', borderRadius: 9, background: 'linear-gradient(140deg, rgba(110,197,49,0.08), transparent 60%)' }}>
         <div style={{ fontSize: 10.5, color: 'var(--green)', letterSpacing: 1.4, textTransform: 'uppercase', fontWeight: 600, marginBottom: 6 }}>Datos CSV</div>
         <div style={{ fontSize: 11.5, color: 'var(--text-2)', lineHeight: 1.45 }}>
-          Zona {dia} · {fecha}<br/>
+          Zona {dia} Â· {fecha}<br/>
           <span style={{ color: 'var(--text-3)', fontSize: 10.5 }}>{totalC} clientes en zona 60-79%</span>
         </div>
       </div>
@@ -246,13 +250,13 @@ export default function GerenciaDashboard({ clientes, focos, pdfs, vendorNames, 
           <div style={{ flex: 1 }}/>
           <div className="search-shell" style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 8, padding: '7px 12px', minWidth: 240 }}>
             <Search size={14} color="var(--text-3)"/>
-            <input placeholder="Buscar cliente, vendedor, SKU…" value={search} onChange={e => setSearch(e.target.value)}
+            <input placeholder="Buscar cliente, vendedor, SKUâ€¦" value={search} onChange={e => setSearch(e.target.value)}
                    style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', color: 'var(--text)', fontSize: 13, fontFamily: 'inherit' }}/>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 11px', border: '1px solid var(--line)', borderRadius: 99, fontSize: 12 }}>
             <span className="live-dot" style={{ width: 6, height: 6, borderRadius: 99, background: 'var(--green)' }}/>
             <span style={{ color: 'var(--text-2)' }}>Zona</span>
-            <span className="mono" style={{ fontWeight: 500 }}>{dia} · {fecha}</span>
+            <span className="mono" style={{ fontWeight: 500 }}>{dia} Â· {fecha}</span>
           </div>
           {pdfGerencial && (
             <a href={`/api/pdf?ruta=${encodeURIComponent(pdfGerencial.RutaPDF_Relativa)}`} target="_blank" rel="noreferrer"
@@ -265,15 +269,15 @@ export default function GerenciaDashboard({ clientes, focos, pdfs, vendorNames, 
         {/* Content */}
         <div style={{ flex: 1, padding: '24px 28px 48px', overflow: 'auto' }}>
 
-          {/* ── RESUMEN ── */}
+          {/* â”€â”€ RESUMEN â”€â”€ */}
           {active === 'resumen' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
               {/* KPIs */}
               <div className="kpi-grid-4" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
                 <KPIBig label="Clientes zona oportunidad" value={String(totalC)} hint="60-79% portafolio" accent="var(--yellow)"/>
                 <KPIBig label="Portafolio promedio" value={`${avgPct.toFixed(1)}%`} hint="zona 60-79%"/>
-                <KPIBig label="Con TP en sistema" value={String(conTP)} hint={`de ${totalC} clientes`} accent="var(--green)" trendUp/>
-                <KPIBig label="Urgentes hoy" value={String(urgentes)} hint="a 1-2 SKUs del TP" trend={urgentes > 0 ? '⚡ prioridad' : undefined} trendUp={false} accent="var(--orange)"/>
+                <KPIBig label="Con acuerdo TP" value={String(conTP)} hint={`de ${totalC} en zona oportunidad`} accent="var(--green)" trendUp/>
+                <KPIBig label="Urgentes hoy" value={String(urgentes)} hint="a 1-2 SKUs del TP" trend={urgentes > 0 ? 'âš¡ prioridad' : undefined} trendUp={false} accent="var(--orange)"/>
               </div>
 
               {/* Objetivos TP del mes */}
@@ -334,17 +338,17 @@ export default function GerenciaDashboard({ clientes, focos, pdfs, vendorNames, 
               {urgentes > 0 && (
                 <div style={{ padding: '14px 18px', background: 'rgba(232,122,0,0.08)', border: '1px solid rgba(232,122,0,0.25)', borderRadius: 10 }}>
                   <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--orange)', marginBottom: 6 }}>
-                    ⚡ {urgentes} cliente{urgentes > 1 ? 's' : ''} a 1-2 SKUs del TP — cerrar hoy
+                    âš¡ {urgentes} cliente{urgentes > 1 ? 's' : ''} a 1-2 SKUs del TP â€” cerrar hoy
                   </div>
                   {topSkus[0] && (
                     <div style={{ fontSize: 11.5, color: 'var(--text-2)' }}>
-                      SKU #1 del día: <strong style={{ color: 'var(--text)' }}>{topSkus[0].Articulo}</strong> — necesario en {topSkus[0].CantClientes} clientes
+                      SKU #1 del dÃ­a: <strong style={{ color: 'var(--text)' }}>{topSkus[0].Articulo}</strong> â€” necesario en {topSkus[0].CantClientes} clientes
                     </div>
                   )}
                 </div>
               )}
 
-              {/* Facturación TP vs No TP */}
+              {/* FacturaciÃ³n TP vs No TP */}
               {(() => {
                 const gen = facturacion.find(f => f.Scope === 'general');
                 if (!gen) return null;
@@ -361,9 +365,9 @@ export default function GerenciaDashboard({ clientes, focos, pdfs, vendorNames, 
                     <div style={{ padding: '18px 22px 14px', borderBottom: '1px solid var(--line)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                       <div>
                         <div style={{ fontSize: 10.5, color: 'var(--text-3)', letterSpacing: 1.5, textTransform: 'uppercase', fontWeight: 600, marginBottom: 4 }}>
-                          {gen.PeriodoDesde} → {gen.PeriodoHasta} · {gen.CriterioFecha}
+                          {gen.PeriodoDesde} â†’ {gen.PeriodoHasta} Â· {gen.CriterioFecha}
                         </div>
-                        <div style={{ fontSize: 16, fontWeight: 600 }}>Facturación TP vs No TP</div>
+                        <div style={{ fontSize: 16, fontWeight: 600 }}>FacturaciÃ³n TP vs No TP</div>
                       </div>
                       <div style={{ display: 'flex', gap: 6 }}>
                         <span style={{ padding: '4px 10px', borderRadius: 99, background: 'rgba(110,197,49,0.12)', border: '1px solid var(--green-line)', fontSize: 11, color: 'var(--green)', fontWeight: 600 }}>
@@ -374,7 +378,7 @@ export default function GerenciaDashboard({ clientes, focos, pdfs, vendorNames, 
                         </span>
                       </div>
                     </div>
-                    {/* Métricas principales */}
+                    {/* MÃ©tricas principales */}
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', borderBottom: '1px solid var(--line)' }}>
                       {([
                         { label: 'Fact. TP',    value: fmt(gen.FacturacionTP),    sub: `prom ${fmt(gen.PromedioFacturacionTP)}`, color: 'var(--green)' },
@@ -392,7 +396,7 @@ export default function GerenciaDashboard({ clientes, focos, pdfs, vendorNames, 
                     {/* Diferencias */}
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', borderBottom: '1px solid var(--line)' }}>
                       <div style={{ padding: '12px 22px', borderRight: '1px solid var(--line)', display: 'flex', alignItems: 'center', gap: 12 }}>
-                        <div style={{ fontSize: 10.5, color: 'var(--text-3)', letterSpacing: 1.2, textTransform: 'uppercase', fontWeight: 600 }}>Dif. Facturación</div>
+                        <div style={{ fontSize: 10.5, color: 'var(--text-3)', letterSpacing: 1.2, textTransform: 'uppercase', fontWeight: 600 }}>Dif. FacturaciÃ³n</div>
                         <div className="mono" style={{ fontSize: 18, fontWeight: 600, color: difColor(gen.DiferenciaFacturacionPct) }}>{difSign(gen.DiferenciaFacturacionPct)}</div>
                         <div style={{ fontSize: 10.5, color: 'var(--text-4)' }}>TP vs No TP</div>
                       </div>
@@ -465,12 +469,12 @@ export default function GerenciaDashboard({ clientes, focos, pdfs, vendorNames, 
                         </div>
                         <div style={{ textAlign:'center' }}>
                           {v.urg > 0
-                            ? <span style={{ background: 'rgba(232,122,0,0.15)', color: 'var(--orange)', borderRadius: 4, padding: '2px 7px', fontSize: 11, fontWeight: 600 }}>⚡{v.urg}</span>
-                            : <span style={{ color: 'var(--text-4)', fontSize: 11 }}>—</span>}
+                            ? <span style={{ background: 'rgba(232,122,0,0.15)', color: 'var(--orange)', borderRadius: 4, padding: '2px 7px', fontSize: 11, fontWeight: 600 }}>âš¡{v.urg}</span>
+                            : <span style={{ color: 'var(--text-4)', fontSize: 11 }}>â€”</span>}
                         </div>
                         <div>
                           {v.pdf && <a href={`/api/pdf?ruta=${encodeURIComponent(v.pdf.RutaPDF_Relativa)}`} target="_blank" rel="noreferrer"
-                               style={{ fontSize: 11, color: 'var(--green)', textDecoration: 'none', fontWeight: 600 }}>↓ PDF</a>}
+                               style={{ fontSize: 11, color: 'var(--green)', textDecoration: 'none', fontWeight: 600 }}>â†“ PDF</a>}
                         </div>
                       </div>
                     );
@@ -480,7 +484,7 @@ export default function GerenciaDashboard({ clientes, focos, pdfs, vendorNames, 
                 {/* Donut zona oportunidad */}
                 <div style={{ border: '1px solid var(--line)', borderRadius: 12, background: 'var(--surface)', padding: 20 }}>
                   <div style={{ fontSize: 10.5, color: 'var(--text-3)', letterSpacing: 1.5, textTransform: 'uppercase', fontWeight: 600, marginBottom: 4 }}>Estado portafolio</div>
-                  <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 14 }}>Distribución clientes</div>
+                  <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 14 }}>DistribuciÃ³n clientes</div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 18 }}>
                     <DonutOportunidad n={totalC}/>
                     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -490,7 +494,7 @@ export default function GerenciaDashboard({ clientes, focos, pdfs, vendorNames, 
                           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12.5, marginBottom: 2 }}>
                             <span>Oportunidad</span><span className="mono" style={{ color: 'var(--text-2)' }}>{totalC}</span>
                           </div>
-                          <div style={{ fontSize: 10.5, color: 'var(--text-3)' }}>60–79% portafolio</div>
+                          <div style={{ fontSize: 10.5, color: 'var(--text-3)' }}>60â€“79% portafolio</div>
                         </div>
                       </div>
                       <div style={{ padding: '10px 12px', background: 'rgba(255,255,255,0.02)', border: '1px solid var(--line)', borderRadius: 8 }}>
@@ -500,7 +504,7 @@ export default function GerenciaDashboard({ clientes, focos, pdfs, vendorNames, 
                         </div>
                       </div>
                       <div style={{ fontSize: 11, color: 'var(--text-3)' }}>
-                        <strong style={{ color: 'var(--green)' }}>{conTP}</strong> con TP activo · <strong style={{ color: 'var(--orange)' }}>{urgentes}</strong> urgentes
+                        <strong style={{ color: 'var(--green)' }}>{conTP}</strong> con TP activo Â· <strong style={{ color: 'var(--orange)' }}>{urgentes}</strong> urgentes
                       </div>
                     </div>
                   </div>
@@ -511,10 +515,10 @@ export default function GerenciaDashboard({ clientes, focos, pdfs, vendorNames, 
               <div style={{ border: '1px solid var(--line)', borderRadius: 12, background: 'var(--surface)', padding: 0, overflow: 'hidden' }}>
                 <div style={{ padding: '18px 22px 12px', borderBottom: '1px solid var(--line)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <div>
-                    <div style={{ fontSize: 10.5, color: 'var(--text-3)', letterSpacing: 1.5, textTransform: 'uppercase', fontWeight: 600, marginBottom: 4 }}>Top SKUs por penetración</div>
-                    <div style={{ fontSize: 16, fontWeight: 600 }}>Productos foco del día</div>
+                    <div style={{ fontSize: 10.5, color: 'var(--text-3)', letterSpacing: 1.5, textTransform: 'uppercase', fontWeight: 600, marginBottom: 4 }}>Top SKUs por penetraciÃ³n</div>
+                    <div style={{ fontSize: 16, fontWeight: 600 }}>Productos foco del dÃ­a</div>
                   </div>
-                  <button onClick={() => setActive('foco')} style={{ fontSize: 11, color: 'var(--green)', background: 'none', border: '1px solid var(--green-line)', borderRadius: 6, padding: '4px 10px', cursor: 'pointer', fontFamily: 'inherit' }}>Ver todos →</button>
+                  <button onClick={() => setActive('foco')} style={{ fontSize: 11, color: 'var(--green)', background: 'none', border: '1px solid var(--green-line)', borderRadius: 6, padding: '4px 10px', cursor: 'pointer', fontFamily: 'inherit' }}>Ver todos â†’</button>
                 </div>
                 <div style={{ padding: '12px 22px 18px', display: 'flex', flexDirection: 'column', gap: 6 }}>
                   {topSkus.slice(0, 5).map(p => {
@@ -540,11 +544,11 @@ export default function GerenciaDashboard({ clientes, focos, pdfs, vendorNames, 
             </div>
           )}
 
-          {/* ── CLIENTES ── */}
+          {/* â”€â”€ CLIENTES â”€â”€ */}
           {active === 'clientes' && (
             <div>
               <div style={{ fontSize: 11, color: 'var(--text-3)', marginBottom: 16 }}>
-                {filteredClientes.length} cliente{filteredClientes.length !== 1 ? 's' : ''} {search ? `que coinciden con "${search}"` : 'en zona oportunidad 60-79%'} · ordenados por urgencia (menos SKUs faltantes primero)
+                {filteredClientes.length} cliente{filteredClientes.length !== 1 ? 's' : ''} {search ? `que coinciden con "${search}"` : 'en zona oportunidad 60-79%'} Â· ordenados por urgencia (menos SKUs faltantes primero)
               </div>
               <div className="table-scroll" style={{ border: '1px solid var(--line)', borderRadius: 12, background: 'var(--surface)', overflow: 'hidden' }}>
                 <div style={{ display: 'grid', gridTemplateColumns: '1.6fr 1fr 0.9fr 110px 70px 60px', gap: 10, padding: '10px 22px', borderBottom: '1px solid var(--line)', fontSize: 10.5, color: 'var(--text-3)', letterSpacing: 1.2, textTransform: 'uppercase', fontWeight: 600, minWidth: 700 }}>
@@ -556,7 +560,7 @@ export default function GerenciaDashboard({ clientes, focos, pdfs, vendorNames, 
                     <div key={i} className="row-hover" style={{ display: 'grid', gridTemplateColumns: '1.6fr 1fr 0.9fr 110px 70px 60px', gap: 10, padding: '11px 22px', alignItems: 'center', borderBottom: '1px solid var(--line)', fontSize: 12.5, minWidth: 700 }}>
                       <div style={{ minWidth: 0 }}>
                         <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: 500 }}>{c.RazonSocial}</div>
-                        {c.Faltan80 <= 2 && c.Faltan80 > 0 && <div style={{ fontSize: 10, color: 'var(--orange)', marginTop: 2 }}>⚡ A {c.Faltan80} SKU{c.Faltan80>1?'s':''} del TP</div>}
+                        {c.Faltan80 <= 2 && c.Faltan80 > 0 && <div style={{ fontSize: 10, color: 'var(--orange)', marginTop: 2 }}>âš¡ A {c.Faltan80} SKU{c.Faltan80>1?'s':''} del TP</div>}
                       </div>
                       <div style={{ color: 'var(--text-2)' }}>
                         <a href={`/vendedor?id=${c.VendedorID}`} style={{ color: 'var(--text-2)', textDecoration: 'none' }}
@@ -574,12 +578,12 @@ export default function GerenciaDashboard({ clientes, focos, pdfs, vendorNames, 
                         <PctBar pct={c.PortafolioPct} color={band.color}/>
                       </div>
                       <div className="mono" style={{ textAlign:'center', color: c.Faltan80 === 0 ? 'var(--text-4)' : 'var(--text-2)', fontSize: 13 }}>
-                        {c.Faltan80 === 0 ? '—' : c.Faltan80}
+                        {c.Faltan80 === 0 ? 'â€”' : c.Faltan80}
                       </div>
                       <div style={{ textAlign:'center' }}>
                         {c.TP_Sistema === 'SI'
                           ? <span style={{ display:'inline-flex', alignItems:'center', gap:3, color:'var(--green)', fontSize:11, fontWeight:600 }}><Check size={11} strokeWidth={2.6}/> SI</span>
-                          : <span style={{ color: 'var(--text-4)', fontSize: 11 }}>—</span>}
+                          : <span style={{ color: 'var(--text-4)', fontSize: 11 }}>â€”</span>}
                       </div>
                     </div>
                   );
@@ -588,12 +592,12 @@ export default function GerenciaDashboard({ clientes, focos, pdfs, vendorNames, 
             </div>
           )}
 
-          {/* ── FOCO ── */}
+          {/* â”€â”€ FOCO â”€â”€ */}
           {active === 'foco' && (
             <div style={{ border: '1px solid var(--line)', borderRadius: 12, background: 'var(--surface)', padding: 0, overflow: 'hidden' }}>
               <div style={{ padding: '18px 22px 14px', borderBottom: '1px solid var(--line)' }}>
-                <div style={{ fontSize: 10.5, color: 'var(--text-3)', letterSpacing: 1.5, textTransform: 'uppercase', fontWeight: 600, marginBottom: 4 }}>Ranking 1-10 · zona {dia}</div>
-                <div style={{ fontSize: 16, fontWeight: 600 }}>SKUs con mayor penetración requerida</div>
+                <div style={{ fontSize: 10.5, color: 'var(--text-3)', letterSpacing: 1.5, textTransform: 'uppercase', fontWeight: 600, marginBottom: 4 }}>Ranking 1-10 Â· zona {dia}</div>
+                <div style={{ fontSize: 16, fontWeight: 600 }}>SKUs con mayor penetraciÃ³n requerida</div>
               </div>
               <div style={{ padding: '16px 22px', display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {topSkus.map(p => {
@@ -619,10 +623,10 @@ export default function GerenciaDashboard({ clientes, focos, pdfs, vendorNames, 
             </div>
           )}
 
-          {/* ── REPORTES ── */}
+          {/* â”€â”€ REPORTES â”€â”€ */}
           {active === 'reportes' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              <div style={{ fontSize: 11, color: 'var(--text-3)' }}>{pdfs.length} archivos PDF generados para zona {dia} · {fecha}</div>
+              <div style={{ fontSize: 11, color: 'var(--text-3)' }}>{pdfs.length} archivos PDF generados para zona {dia} Â· {fecha}</div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {pdfs.map((p, i) => (
                   <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 20px', border: '1px solid var(--line)', borderRadius: 10, background: 'var(--surface)' }}>
@@ -630,7 +634,7 @@ export default function GerenciaDashboard({ clientes, focos, pdfs, vendorNames, 
                     <div style={{ flex: 1 }}>
                       <div style={{ fontWeight: 500, fontSize: 13 }}>{p.ArchivoPDF}</div>
                       <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 2 }}>
-                        {p.TipoPDF === 'gerencia' ? 'Resumen gerencial' : `Vendedor: ${p.VendedorNombre}`} · Zona {p.Zona} · {p.GeneradoEn}
+                        {p.TipoPDF === 'gerencia' ? 'Resumen gerencial' : `Vendedor: ${p.VendedorNombre}`} Â· Zona {p.Zona} Â· {p.GeneradoEn}
                       </div>
                     </div>
                     <a href={`/api/pdf?ruta=${encodeURIComponent(p.RutaPDF_Relativa)}`} target="_blank" rel="noreferrer"
@@ -646,10 +650,12 @@ export default function GerenciaDashboard({ clientes, focos, pdfs, vendorNames, 
 
         {/* Footer */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 28px', borderTop: '1px solid var(--line)', fontSize: 11, color: 'var(--text-4)', flexShrink: 0 }}>
-          <span>Orbit © 2026 · Plataforma propietaria de Torres Matías.</span>
-          <span className="mono" style={{ fontSize: 10 }}>Zona {dia} · {fecha} · {totalC} clientes</span>
+          <span>Orbit Â© 2026 Â· Plataforma propietaria de Torres MatÃ­as.</span>
+          <span className="mono" style={{ fontSize: 10 }}>Zona {dia} Â· {fecha} Â· {totalC} clientes</span>
         </div>
       </main>
     </div>
   );
 }
+
+
