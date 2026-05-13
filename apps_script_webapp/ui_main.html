@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Orbit · Tienda Perfecta</title>
+<style>
+/* ── Reset ───────────────────────────────────────────────────────────────── */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+  background: #0A0A0A;
+  color: #FFFFFF;
+  min-height: 100vh;
+  font-size: 15px;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Login ───────────────────────────────────────────────────────────────── */
+#login-section {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 24px 16px;
+}
+
+.login-card {
+  background: #111111;
+  border: 1px solid #1E1E1E;
+  border-radius: 18px;
+  padding: 40px 28px 32px;
+  width: 100%;
+  max-width: 360px;
+}
+
+.logo-area {
+  text-align: center;
+  margin-bottom: 36px;
+}
+
+.orbit-badge {
+  width: 56px;
+  height: 56px;
+  background: #6EC531;
+  border-radius: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  font-weight: 900;
+  color: #0A0A0A;
+  margin-bottom: 14px;
+  letter-spacing: -1px;
+}
+
+.logo-area h1 {
+  font-size: 20px;
+  font-weight: 700;
+  color: #6EC531;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+}
+
+.logo-area p {
+  font-size: 13px;
+  color: #555555;
+  margin-top: 5px;
+}
+
+.field { margin-bottom: 16px; }
+
+.field label {
+  display: block;
+  font-size: 11px;
+  color: #666666;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  margin-bottom: 7px;
+  font-weight: 600;
+}
+
+.field input {
+  width: 100%;
+  background: #0A0A0A;
+  border: 1px solid #2A2A2A;
+  border-radius: 9px;
+  padding: 13px 14px;
+  color: #FFFFFF;
+  font-size: 16px;
+  outline: none;
+  transition: border-color 0.15s;
+  -webkit-appearance: none;
+}
+
+.field input:focus { border-color: #6EC531; }
+
+.btn-primary {
+  width: 100%;
+  background: #6EC531;
+  color: #0A0A0A;
+  border: none;
+  border-radius: 9px;
+  padding: 15px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  margin-top: 8px;
+  transition: background 0.15s, opacity 0.15s;
+  letter-spacing: 0.2px;
+}
+
+.btn-primary:active  { background: #5DAD28; }
+.btn-primary:disabled {
+  background: #1E3A0A;
+  color: #3A5A1A;
+  cursor: not-allowed;
+}
+
+.error-msg {
+  color: #FF5555;
+  font-size: 13px;
+  text-align: center;
+  margin-top: 12px;
+  min-height: 18px;
+}
+
+/* ── Spinner overlay ─────────────────────────────────────────────────────── */
+#loading-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 10, 10, 0.88);
+  z-index: 200;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 16px;
+}
+#loading-overlay.visible { display: flex; }
+
+.spinner {
+  width: 38px;
+  height: 38px;
+  border: 3px solid #1E1E1E;
+  border-top-color: #6EC531;
+  border-radius: 50%;
+  animation: spin 0.75s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.loading-txt { color: #555555; font-size: 13px; }
+
+/* ── Dashboard compartido ────────────────────────────────────────────────── */
+.dashboard-header {
+  background: #0E0E0E;
+  border-bottom: 1px solid #1A1A1A;
+  padding: 14px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.brand {
+  font-size: 10px;
+  color: #6EC531;
+  font-weight: 700;
+  letter-spacing: 1.8px;
+  text-transform: uppercase;
+  margin-bottom: 2px;
+}
+
+.user-name { font-size: 17px; font-weight: 600; }
+
+.fecha-badge {
+  font-size: 11px;
+  color: #888888;
+  background: #1A1A1A;
+  padding: 5px 9px;
+  border-radius: 6px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.dashboard-body {
+  padding: 20px 16px 40px;
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.section-title {
+  font-size: 10px;
+  color: #6EC531;
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  font-weight: 700;
+  margin: 28px 0 12px;
+  padding-bottom: 7px;
+  border-bottom: 1px solid #1A1A1A;
+}
+.section-title:first-child { margin-top: 4px; }
+
+/* ── Botón PDF ───────────────────────────────────────────────────────────── */
+.btn-pdf {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  background: #6EC531;
+  color: #0A0A0A;
+  text-decoration: none;
+  border-radius: 12px;
+  padding: 20px;
+  font-size: 17px;
+  font-weight: 700;
+  transition: background 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+.btn-pdf:active { background: #5DAD28; }
+.btn-pdf-icon  { font-size: 24px; line-height: 1; }
+
+.pdf-meta {
+  font-size: 11px;
+  color: #444444;
+  text-align: center;
+  margin-top: 8px;
+}
+
+.pdf-unavail {
+  text-align: center;
+  padding: 22px;
+  background: #111111;
+  border-radius: 12px;
+  color: #555555;
+  font-size: 14px;
+  border: 1px dashed #222222;
+}
+
+/* ── Tablas ──────────────────────────────────────────────────────────────── */
+.table-wrap {
+  overflow-x: auto;
+  border-radius: 10px;
+  border: 1px solid #1A1A1A;
+  -webkit-overflow-scrolling: touch;
+}
+
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+
+th {
+  background: #131313;
+  color: #666666;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  padding: 10px 12px;
+  text-align: left;
+  white-space: nowrap;
+  font-weight: 600;
+}
+
+td {
+  padding: 10px 12px;
+  border-top: 1px solid #161616;
+  vertical-align: middle;
+}
+
+tbody tr:hover td { background: #0E0E0E; }
+
+.badge-tp {
+  display: inline-block;
+  background: #1A3A0A;
+  color: #6EC531;
+  padding: 2px 8px;
+  border-radius: 5px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.badge-no {
+  display: inline-block;
+  background: #1A1A1A;
+  color: #444444;
+  padding: 2px 8px;
+  border-radius: 5px;
+  font-size: 11px;
+}
+
+.pct-cell {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  white-space: nowrap;
+}
+
+.pct-bar {
+  height: 4px;
+  border-radius: 2px;
+  background: #6EC531;
+  flex-shrink: 0;
+  min-width: 2px;
+}
+
+.rank-num {
+  display: inline-block;
+  background: #1A1A1A;
+  color: #6EC531;
+  padding: 2px 8px;
+  border-radius: 5px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.client-name  { font-weight: 500; }
+.client-local { font-size: 11px; color: #555555; margin-top: 2px; }
+
+.empty-state {
+  text-align: center;
+  padding: 32px 16px;
+  color: #333333;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+/* Colores cumplimiento gerencia */
+.pct-ok   { color: #6EC531; font-weight: 700; }
+.pct-warn { color: #FFD060; font-weight: 700; }
+.pct-low  { color: #FF6060; font-weight: 700; }
+
+.footer-note {
+  text-align: center;
+  font-size: 11px;
+  color: #2A2A2A;
+  margin-top: 48px;
+}
+</style>
+</head>
+<body>
+
+<!-- Spinner -->
+<div id="loading-overlay">
+  <div class="spinner"></div>
+  <span class="loading-txt">Cargando datos...</span>
+</div>
+
+<!-- Login -->
+<div id="login-section">
+  <div class="login-card">
+    <div class="logo-area">
+      <div class="orbit-badge">O</div>
+      <h1>Orbit</h1>
+      <p>Tienda Perfecta · PyP</p>
+    </div>
+    <form onsubmit="handleLogin(event)">
+      <div class="field">
+        <label>Número de vendedor o "gerencia"</label>
+        <input type="text" id="input-id"
+               placeholder="2, 3, 4, 5, 6 ó gerencia"
+               autocomplete="username"
+               autocorrect="off"
+               autocapitalize="none"
+               inputmode="text">
+      </div>
+      <div class="field">
+        <label>Contraseña</label>
+        <input type="password" id="input-pass"
+               placeholder="••••••••"
+               autocomplete="current-password">
+      </div>
+      <button type="submit" class="btn-primary" id="btn-login">Ingresar</button>
+      <p id="login-error" class="error-msg"></p>
+    </form>
+  </div>
+</div>
+
+<!-- Secciones de dashboard (incluidas como fragmentos ocultos) -->
+<?!= include('ui_vendedor') ?>
+<?!= include('ui_gerencia') ?>
+
+<script>
+// ─── Estado ───────────────────────────────────────────────────────────────────
+let _rol = null;
+let _id  = null;
+
+// ─── Login ────────────────────────────────────────────────────────────────────
+function handleLogin(e) {
+  e.preventDefault();
+  const id   = document.getElementById('input-id').value.trim().toLowerCase();
+  const pass = document.getElementById('input-pass').value;
+  const errEl = document.getElementById('login-error');
+
+  errEl.textContent = '';
+  if (!id || !pass) {
+    errEl.textContent = 'Completá todos los campos.';
+    return;
+  }
+
+  setLoading(true);
+  document.getElementById('btn-login').disabled = true;
+
+  google.script.run
+    .withSuccessHandler(onAuth)
+    .withFailureHandler(onError)
+    .autenticar(id, pass);
+}
+
+function onAuth(res) {
+  setLoading(false);
+  document.getElementById('btn-login').disabled = false;
+
+  if (!res.ok) {
+    document.getElementById('login-error').textContent = 'Número o contraseña incorrectos.';
+    return;
+  }
+
+  _rol = res.rol;
+  _id  = res.id || null;
+  document.getElementById('login-section').style.display = 'none';
+
+  if (res.rol === 'vendedor') cargarVendedor(res.id);
+  else                        cargarGerencia();
+}
+
+// ─── Vendedor ─────────────────────────────────────────────────────────────────
+function cargarVendedor(id) {
+  setLoading(true);
+  google.script.run
+    .withSuccessHandler(renderVendedor)
+    .withFailureHandler(onError)
+    .getDatosVendedor(id);
+}
+
+function renderVendedor(d) {
+  setLoading(false);
+  if (!d.ok) { mostrarErrorGlobal(d.error || 'Error al cargar datos.'); return; }
+
+  document.getElementById('v-nombre').textContent = d.nombre;
+  document.getElementById('v-fecha').textContent  = fmtFecha(d.fecha);
+
+  // PDF
+  const pdfSec = document.getElementById('v-pdf-section');
+  if (d.pdfUrl) {
+    pdfSec.innerHTML =
+      '<a href="' + d.pdfUrl + '" target="_blank" rel="noopener" class="btn-pdf">' +
+        '<span class="btn-pdf-icon">📄</span> Ver PDF del día' +
+      '</a>' +
+      '<p class="pdf-meta">Fecha: ' + fmtFecha(d.pdfFecha) + ' · Se abre en Google Drive</p>';
+  } else {
+    pdfSec.innerHTML =
+      '<div class="pdf-unavail">PDF no disponible aún.<br>' +
+      'Ejecutá el pipeline y el sync primero.</div>';
+  }
+
+  // Clientes
+  renderClientes(d.clientes);
+  // Focos
+  renderFocos(d.focos);
+
+  document.getElementById('vendedor-section').style.display = 'block';
+}
+
+function renderClientes(rows) {
+  const wrap = document.getElementById('v-clientes-wrap');
+  if (!rows || !rows.length) {
+    wrap.innerHTML = '<div class="empty-state">Sin clientes para hoy.</div>';
+    return;
+  }
+  const tbody = rows.map(function(c) {
+    const pct    = Math.min(parseFloat(c.PortafolioPct) || 0, 100);
+    const barW   = Math.round(pct * 0.55);
+    const esTP   = c.TP_Aplica === '1' || /^s[ií]/i.test(c.TP_Aplica) || c.TP_Aplica === 'True';
+    return '<tr>' +
+      '<td><div class="client-name">' + esc(c.RazonSocial) + '</div>' +
+           '<div class="client-local">' + esc(c.Localidad) + '</div></td>' +
+      '<td><div class="pct-cell">' +
+           '<div class="pct-bar" style="width:' + barW + 'px"></div>' +
+           '<span>' + pct.toFixed(0) + '%</span></div></td>' +
+      '<td style="text-align:center">' + (c.Faltan80 || '0') + '</td>' +
+      '<td>' + (esTP
+        ? '<span class="badge-tp">TP</span>'
+        : '<span class="badge-no">No</span>') + '</td>' +
+    '</tr>';
+  }).join('');
+  wrap.innerHTML =
+    '<div class="table-wrap"><table>' +
+    '<thead><tr><th>Cliente</th><th>Portafolio</th><th>Faltan 80%</th><th>TP</th></tr></thead>' +
+    '<tbody>' + tbody + '</tbody></table></div>';
+}
+
+function renderFocos(rows) {
+  const wrap = document.getElementById('v-focos-wrap');
+  if (!rows || !rows.length) {
+    wrap.innerHTML = '<div class="empty-state">Sin focos para hoy.</div>';
+    return;
+  }
+  const tbody = rows.map(function(f) {
+    return '<tr>' +
+      '<td><span class="rank-num">#' + (f.Rank || '—') + '</span></td>' +
+      '<td>' + esc(f.Articulo) + '</td>' +
+      '<td style="text-align:center">' + (f.CantClientes || '0') + '</td>' +
+    '</tr>';
+  }).join('');
+  wrap.innerHTML =
+    '<div class="table-wrap"><table>' +
+    '<thead><tr><th>#</th><th>Artículo</th><th>Clientes</th></tr></thead>' +
+    '<tbody>' + tbody + '</tbody></table></div>';
+}
+
+// ─── Gerencia ─────────────────────────────────────────────────────────────────
+function cargarGerencia() {
+  setLoading(true);
+  google.script.run
+    .withSuccessHandler(renderGerencia)
+    .withFailureHandler(onError)
+    .getDatosGerencia();
+}
+
+function renderGerencia(d) {
+  setLoading(false);
+  if (!d.ok) { mostrarErrorGlobal(d.error || 'Error al cargar datos.'); return; }
+
+  document.getElementById('g-fecha').textContent = fmtFecha(d.fecha);
+
+  renderObjetivos(d.objetivos);
+  renderFacturacion(d.facturacion);
+
+  document.getElementById('gerencia-section').style.display = 'block';
+}
+
+function renderObjetivos(rows) {
+  const wrap = document.getElementById('g-objetivos-wrap');
+  if (!rows || !rows.length) {
+    wrap.innerHTML =
+      '<div class="empty-state">Sin datos de objetivos.<br>' +
+      'Verificá que la hoja "tp_objetivos_resumen" esté sincronizada<br>' +
+      '(ver README_DEPLOY.md → Paso extra gerencia).</div>';
+    return;
+  }
+  const tbody = rows.map(function(o) {
+    const pct   = parseFloat(o.CumplimientoPct) || 0;
+    const cls   = pct >= 100 ? 'pct-ok' : pct >= 70 ? 'pct-warn' : 'pct-low';
+    return '<tr>' +
+      '<td>' + esc(o.VendedorNombre) + '</td>' +
+      '<td style="text-align:right">' + fmtNum(o.Objetivo)  + '</td>' +
+      '<td style="text-align:right">' + fmtNum(o.Acumulado) + '</td>' +
+      '<td style="text-align:right">' + fmtNum(o.RealDia)   + '</td>' +
+      '<td style="text-align:right"><span class="' + cls + '">' + pct.toFixed(1) + '%</span></td>' +
+    '</tr>';
+  }).join('');
+  wrap.innerHTML =
+    '<div class="table-wrap"><table>' +
+    '<thead><tr>' +
+      '<th>Vendedor</th>' +
+      '<th style="text-align:right">Objetivo</th>' +
+      '<th style="text-align:right">Acumulado</th>' +
+      '<th style="text-align:right">Hoy</th>' +
+      '<th style="text-align:right">Cumpl.</th>' +
+    '</tr></thead>' +
+    '<tbody>' + tbody + '</tbody></table></div>';
+}
+
+function renderFacturacion(rows) {
+  const wrap = document.getElementById('g-facturacion-wrap');
+  if (!rows || !rows.length) {
+    wrap.innerHTML =
+      '<div class="empty-state">Sin datos de facturación.<br>' +
+      'Verificá que la hoja "tp_facturacion_comparativa" esté sincronizada<br>' +
+      '(ver README_DEPLOY.md → Paso extra gerencia).</div>';
+    return;
+  }
+  const tbody = rows.slice(0, 30).map(function(f) {
+    const diff  = parseFloat(f.DiferenciaFacturacionPct) || 0;
+    const sign  = diff >= 0 ? '+' : '';
+    const cls   = diff >= 0 ? 'pct-ok' : 'pct-low';
+    return '<tr>' +
+      '<td>' + esc(f.VendedorNombre || f.Scope || '—') + '</td>' +
+      '<td style="text-align:right">' + fmtNum(f.FacturacionTP)    + '</td>' +
+      '<td style="text-align:right">' + fmtNum(f.FacturacionNoTP)  + '</td>' +
+      '<td style="text-align:right"><span class="' + cls + '">' + sign + diff.toFixed(1) + '%</span></td>' +
+    '</tr>';
+  }).join('');
+  wrap.innerHTML =
+    '<div class="table-wrap"><table>' +
+    '<thead><tr>' +
+      '<th>Vendedor</th>' +
+      '<th style="text-align:right">Fact. TP</th>' +
+      '<th style="text-align:right">Fact. No TP</th>' +
+      '<th style="text-align:right">Diferencia</th>' +
+    '</tr></thead>' +
+    '<tbody>' + tbody + '</tbody></table></div>';
+}
+
+// ─── Utilidades ───────────────────────────────────────────────────────────────
+function setLoading(on) {
+  document.getElementById('loading-overlay').classList.toggle('visible', on);
+}
+
+function onError(err) {
+  setLoading(false);
+  document.getElementById('btn-login').disabled = false;
+  mostrarErrorGlobal('Error de conexión. Intentá de nuevo en unos segundos.');
+  console.error(err);
+}
+
+function mostrarErrorGlobal(msg) {
+  document.getElementById('vendedor-section').style.display = 'none';
+  document.getElementById('gerencia-section').style.display = 'none';
+  document.getElementById('login-section').style.display    = 'flex';
+  document.getElementById('login-error').textContent        = msg;
+}
+
+function esc(str) {
+  if (str == null) return '';
+  return String(str)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function fmtNum(val) {
+  var n = parseFloat(val) || 0;
+  return n.toLocaleString('es-AR', { maximumFractionDigits: 0 });
+}
+
+function fmtFecha(f) {
+  if (!f) return '—';
+  var p = String(f).split('-');
+  return p.length === 3 ? p[2]+'/'+p[1]+'/'+p[0] : f;
+}
+</script>
+</body>
+</html>

@@ -38,3 +38,11 @@ url_publica.txt
 .idea/
 *.swp
 Thumbs.db
+portal/.env
+portal/test-results/
+portal/playwright-report/
+
+# Node / Astro build outputs
+portal/node_modules/
+portal/dist/
+portal/.astro/

@@ -1,0 +1,60 @@
+---
+import { getClientes, getFocos, getPdfs, getObjetivos } from '../lib/data';
+import { getConfig } from '../lib/config';
+import VendedorDashboard from '../components/VendedorDashboard';
+
+const role = Astro.cookies.get('orbit_role')?.value ?? '';
+
+// Determine which vendor ID is being requested
+const paramId = Astro.url.searchParams.get('id') ?? '';
+
+// Cookie format: "gerencia" or "vendedor_N"
+const isGerencia      = role === 'gerencia';
+const vendorFromCookie = role.startsWith('vendedor_') ? role.replace('vendedor_', '') : null;
+
+if (isGerencia) {
+  // allowed — gerencia can browse any vendor view
+} else if (vendorFromCookie === paramId) {
+  // allowed — vendor viewing own panel
+} else {
+  return Astro.redirect('/');
+}
+
+const cfg = getConfig();
+const vendedorId   = paramId;
+const vendedorName = cfg.vendor_names[vendedorId] ?? `Vendedor ${vendedorId}`;
+
+const allClientes  = await getClientes();
+const allFocos     = await getFocos();
+const allPdfs      = await getPdfs();
+const allObjetivos = await getObjetivos();
+
+const clientes = allClientes.filter(c => String(c.VendedorID) === vendedorId);
+const focos    = allFocos.filter(f => String(f.VendedorID) === vendedorId);
+const pdf      = allPdfs.find(p => String(p.VendedorID) === vendedorId && p.TipoPDF === 'vendedor') ?? null;
+const objetivo = allObjetivos.find(o => o.Scope === 'vendedor' && String(o.VendedorID) === vendedorId) ?? null;
+---
+
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Orbit · {vendedorName}</title>
+    <link rel="stylesheet" href="/orbit.css" />
+    <link rel="icon" href="/assets/orbit-mark.png" type="image/png" />
+  </head>
+  <body>
+    <div class="bg-grid"></div>
+    <VendedorDashboard
+      client:load
+      clientes={clientes}
+      focos={focos}
+      pdf={pdf}
+      vendedorId={vendedorId}
+      vendedorName={vendedorName}
+      objetivo={objetivo}
+    />
+    <script src="/audio.js" is:inline></script>
+  </body>
+</html>
