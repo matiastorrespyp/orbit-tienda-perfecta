@@ -111,7 +111,7 @@ export default function GerenciaDashboard({ clientes, focos, pdfs, vendorNames, 
     const tp   = rows.filter(c => c.TP_Sistema === 'SI').length;
     const urg  = rows.filter(c => c.Faltan80 <= 2 && c.Faltan80 > 0).length;
     const topF = focos.find(f => f.Scope === 'vendedor' && f.VendedorNombre === v && f.Rank === 1);
-    const pdf  = pdfs.find(p => p.VendedorNombre === v && p.TipoPDF === 'vendedor');
+    const pdf  = pdfs.find(p => p.VendedorID === id && p.TipoPDF === 'vendedor');
     return { v, id, count: rows.length, avg, tp, urg, topF, pdf };
   }).sort((a, b) => b.urg - a.urg);
 
@@ -276,7 +276,7 @@ export default function GerenciaDashboard({ clientes, focos, pdfs, vendorNames, 
               <div className="kpi-grid-4" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
                 <KPIBig label="Clientes zona oportunidad" value={String(totalC)} hint="60-79% portafolio" accent="var(--yellow)"/>
                 <KPIBig label="Portafolio promedio" value={`${avgPct.toFixed(1)}%`} hint="zona 60-79%"/>
-                <KPIBig label="Con acuerdo TP" value={String(conTP)} hint={`de ${totalC} en zona oportunidad`} accent="var(--green)" trendUp/>
+                <KPIBig label="Inscriptos TP" value={String(conTP)} hint="tienen TP activo en sistema" accent="var(--green)" trendUp/>
                 <KPIBig label="Urgentes hoy" value={String(urgentes)} hint="a 1-2 SKUs del TP" trend={urgentes > 0 ? '⚡ prioridad' : undefined} trendUp={false} accent="var(--orange)"/>
               </div>
 
@@ -292,6 +292,7 @@ export default function GerenciaDashboard({ clientes, focos, pdfs, vendorNames, 
                       <div>
                         <div style={{ fontSize: 10.5, color: 'var(--text-3)', letterSpacing: 1.5, textTransform: 'uppercase', fontWeight: 600, marginBottom: 4 }}>Mes actual</div>
                         <div style={{ fontSize: 16, fontWeight: 600 }}>Objetivos TP</div>
+                        <div style={{ fontSize: 10.5, color: 'var(--text-4)', marginTop: 4 }}>Datos objetivos al {gen.Fecha}</div>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                         <MiniRing pct={gen.CumplimientoPct} color={cc(gen.CumplimientoPct)} size={56}/>
@@ -438,7 +439,7 @@ export default function GerenciaDashboard({ clientes, focos, pdfs, vendorNames, 
                     <div style={{ fontSize: 16, fontWeight: 600 }}>Por vendedor</div>
                   </div>
                   <div style={{ display: 'grid', gridTemplateColumns: '36px 1.2fr 90px 60px 70px 60px 48px', gap: 8, padding: '8px 22px', fontSize: 10.5, color: 'var(--text-3)', letterSpacing: 1.2, textTransform: 'uppercase', fontWeight: 600 }}>
-                    <div>#</div><div>Vendedor</div><div>Portafolio</div><div style={{ textAlign:'center' }}>Cli.</div>
+                    <div>#</div><div>Vendedor</div><div>Portafolio</div><div style={{ textAlign:'center' }}>En zona</div>
                     <div style={{ textAlign:'center' }}>Con TP</div><div style={{ textAlign:'center' }}>Urg.</div><div></div>
                   </div>
                   {byVendor.map((v, i) => {
