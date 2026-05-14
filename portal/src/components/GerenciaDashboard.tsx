@@ -335,14 +335,15 @@ export default function GerenciaDashboard({ clientes, focos, pdfs, vendorNames, 
                     )}
                     {vends.length > 0 && (
                       <>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 90px 80px 80px 90px', gap: 8, padding: '8px 22px', fontSize: 10.5, color: 'var(--text-3)', letterSpacing: 1.2, textTransform: 'uppercase', fontWeight: 600, borderBottom: '1px solid var(--line)' }}>
-                          <div>Vendedor</div><div style={{ textAlign:'right' }}>Objetivo</div><div style={{ textAlign:'right' }}>Acum.</div><div style={{ textAlign:'right' }}>Faltante</div><div style={{ textAlign:'right' }}>Cumpl. %</div>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 90px 80px 80px 80px 90px', gap: 8, padding: '8px 22px', fontSize: 10.5, color: 'var(--text-3)', letterSpacing: 1.2, textTransform: 'uppercase', fontWeight: 600, borderBottom: '1px solid var(--line)' }}>
+                          <div>Vendedor</div><div style={{ textAlign:'right' }}>Objetivo</div><div style={{ textAlign:'right' }}>Acum.</div><div style={{ textAlign:'right' }}>Real día</div><div style={{ textAlign:'right' }}>Faltan</div><div style={{ textAlign:'right' }}>Cumpl. %</div>
                         </div>
                         {vends.map(v => (
-                          <div key={v.VendedorID} className="row-hover" style={{ display: 'grid', gridTemplateColumns: '1.2fr 90px 80px 80px 90px', gap: 8, padding: '10px 22px', alignItems: 'center', borderBottom: '1px solid var(--line)', fontSize: 12.5 }}>
+                          <div key={v.VendedorID} className="row-hover" style={{ display: 'grid', gridTemplateColumns: '1.2fr 90px 80px 80px 80px 90px', gap: 8, padding: '10px 22px', alignItems: 'center', borderBottom: '1px solid var(--line)', fontSize: 12.5 }}>
                             <div style={{ fontWeight: 500 }}>{v.VendedorNombre}</div>
                             <div className="mono" style={{ textAlign:'right', color: 'var(--text-2)' }}>{v.Objetivo.toFixed(0)}</div>
                             <div className="mono" style={{ textAlign:'right', color: 'var(--text-2)' }}>{v.Acumulado}</div>
+                            <div className="mono" style={{ textAlign:'right', color: 'var(--text-2)' }}>{v.RealDia}</div>
                             <div className="mono" style={{ textAlign:'right', color: 'var(--text-2)' }}>{v.Faltante.toFixed(0)}</div>
                             <div className="mono" style={{ textAlign:'right', fontWeight: 600, color: cc(v.CumplimientoPct) }}>{v.CumplimientoPct.toFixed(1)}%</div>
                           </div>
