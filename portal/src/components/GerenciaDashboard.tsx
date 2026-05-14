@@ -561,13 +561,31 @@ export default function GerenciaDashboard({ clientes, focos, pdfs, vendorNames, 
                       <div style={{ minWidth: 0 }}>
                         <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: 500 }}>{c.RazonSocial}</div>
                         {c.Faltan80 <= 2 && c.Faltan80 > 0 && <div style={{ fontSize: 10, color: 'var(--orange)', marginTop: 2 }}>⚡ A {c.Faltan80} SKU{c.Faltan80>1?'s':''} del TP</div>}
-                        {c.SKUsFaltan80 && (
-                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 5 }}>
-                            {c.SKUsFaltan80.split('|').map((sku, idx) => (
-                              <span key={idx} style={{ fontSize: 10, background: 'rgba(255,255,255,0.05)', border: '1px solid var(--line)', borderRadius: 4, padding: '1px 6px', color: 'var(--text-3)', whiteSpace: 'nowrap' }}>
-                                {sku.trim()}
-                              </span>
-                            ))}
+                        {c.SKUsFaltan100 && (
+                          <div style={{ marginTop: 5 }}>
+                            <div style={{ fontSize: 10, color: 'var(--text-4)', marginBottom: 4, letterSpacing: 0.5 }}>Opciones no compradas:</div>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                              {(() => {
+                                const prio = new Set(c.SKUsFaltan80 ? c.SKUsFaltan80.split('|').map(s => s.trim()) : []);
+                                return c.SKUsFaltan100.split('|').map((sku, idx) => {
+                                  const s = sku.trim();
+                                  const isPrio = prio.has(s);
+                                  return (
+                                    <span key={idx} style={{
+                                      fontSize: 10,
+                                      background: isPrio ? 'rgba(110,197,49,0.10)' : 'rgba(255,255,255,0.05)',
+                                      border: `1px solid ${isPrio ? 'rgba(110,197,49,0.45)' : 'var(--line)'}`,
+                                      borderRadius: 4,
+                                      padding: '1px 6px',
+                                      color: isPrio ? 'var(--green)' : 'var(--text-3)',
+                                      whiteSpace: 'nowrap',
+                                    }}>
+                                      {s}
+                                    </span>
+                                  );
+                                });
+                              })()}
+                            </div>
                           </div>
                         )}
                       </div>
