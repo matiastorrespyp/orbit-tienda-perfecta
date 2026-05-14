@@ -15,7 +15,7 @@ function pctBand(p: number) {
   if (p >= 80) return { label: 'TP',          color: '#6EC531' };
   if (p >= 60) return { label: 'Oportunidad', color: '#F0C000' };
   if (p >= 30) return { label: 'Recuperar',   color: '#E87A00' };
-  return             { label: 'CrÃ­tico',       color: '#E84B4B' };
+  return             { label: 'Crítico',        color: '#E84B4B' };
 }
 
 function PctBar({ pct, color }: { pct: number; color: string }) {
@@ -86,7 +86,7 @@ export default function VendedorDashboard({ clientes, focos, pdf, vendedorId, ve
             </div>
             <div>
               <div style={{ fontSize: 13, fontWeight: 600 }}>{vendedorName}</div>
-              <div style={{ fontSize: 10.5, color: 'var(--text-3)' }}>Preventista Â· Zona {dia}</div>
+              <div style={{ fontSize: 10.5, color: 'var(--text-3)' }}>Preventista · Zona {dia}</div>
             </div>
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
@@ -111,7 +111,7 @@ export default function VendedorDashboard({ clientes, focos, pdf, vendedorId, ve
           <div style={{ fontSize: 10.5, color: 'var(--green)', letterSpacing: 1.4, textTransform: 'uppercase', fontWeight: 600, marginBottom: 4 }}>Mis datos</div>
           <div style={{ fontSize: 11.5, color: 'var(--text-2)' }}>
             {clientes.length} clientes hoy<br/>
-            <span style={{ color: 'var(--text-3)', fontSize: 10.5 }}>Zona {dia} Â· {fecha}</span>
+            <span style={{ color: 'var(--text-3)', fontSize: 10.5 }}>Zona {dia} · {fecha}</span>
           </div>
         </div>
 
@@ -147,7 +147,7 @@ export default function VendedorDashboard({ clientes, focos, pdf, vendedorId, ve
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 12px', border: '1px solid var(--line)', borderRadius: 99, fontSize: 12 }}>
             <span className="live-dot" style={{ width: 6, height: 6, borderRadius: 99, background: 'var(--green)' }}/>
             <span style={{ color: 'var(--text-2)' }}>Zona</span>
-            <span className="mono" style={{ fontWeight: 500 }}>{dia} Â· {fecha}</span>
+            <span className="mono" style={{ fontWeight: 500 }}>{dia} · {fecha}</span>
           </div>
           {pdf && (
             <a href={`/api/pdf?ruta=${encodeURIComponent(pdf.RutaPDF_Relativa)}`} target="_blank" rel="noreferrer"
@@ -219,7 +219,7 @@ export default function VendedorDashboard({ clientes, focos, pdf, vendedorId, ve
           {/* Alertas urgentes */}
           {urgentes.length > 0 && (
             <div style={{ marginBottom: 20 }}>
-              <div style={{ fontSize: 10.5, color: 'var(--text-3)', letterSpacing: 1.5, textTransform: 'uppercase', fontWeight: 600, marginBottom: 10 }}>âš¡ Cerrar hoy â€” mÃ­nimo esfuerzo, mÃ¡ximo impacto</div>
+              <div style={{ fontSize: 10.5, color: 'var(--text-3)', letterSpacing: 1.5, textTransform: 'uppercase', fontWeight: 600, marginBottom: 10 }}>⚡ Cerrar hoy — mínimo esfuerzo, máximo impacto</div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {urgentes.map((c, i) => {
                   const skus80  = c.SKUsFaltan80.split('|').map(s => s.trim()).filter(Boolean);
@@ -266,8 +266,8 @@ export default function VendedorDashboard({ clientes, focos, pdf, vendedorId, ve
           {/* Todos mis clientes */}
           <div style={{ border: '1px solid var(--line)', borderRadius: 12, background: 'var(--surface)', overflow: 'hidden', marginBottom: 20 }}>
             <div style={{ padding: '18px 22px 14px', borderBottom: '1px solid var(--line)' }}>
-              <div style={{ fontSize: 10.5, color: 'var(--text-3)', letterSpacing: 1.5, textTransform: 'uppercase', fontWeight: 600, marginBottom: 4 }}>Zona {dia} Â· {fecha}</div>
-              <div style={{ fontSize: 16, fontWeight: 600 }}>Todos mis clientes â€” por urgencia</div>
+              <div style={{ fontSize: 10.5, color: 'var(--text-3)', letterSpacing: 1.5, textTransform: 'uppercase', fontWeight: 600, marginBottom: 4 }}>Zona {dia} · {fecha}</div>
+              <div style={{ fontSize: 16, fontWeight: 600 }}>Todos mis clientes — por urgencia</div>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1.8fr 1fr 100px 64px 60px', gap: 10, padding: '8px 22px', fontSize: 10.5, color: 'var(--text-3)', letterSpacing: 1.2, textTransform: 'uppercase', fontWeight: 600, borderBottom: '1px solid var(--line)' }}>
               <div>Cliente</div><div>Localidad</div><div>Portafolio</div><div style={{ textAlign:'center' }}>Faltan 80</div><div style={{ textAlign:'center' }}>TP</div>
@@ -281,7 +281,7 @@ export default function VendedorDashboard({ clientes, focos, pdf, vendedorId, ve
                   <div className="row-hover" style={{ display: 'grid', gridTemplateColumns: '1.8fr 1fr 100px 64px 60px', gap: 10, padding: '11px 22px', alignItems: 'center', fontSize: 12.5 }}>
                     <div style={{ minWidth: 0 }}>
                       <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: 500 }}>{c.RazonSocial}</div>
-                      {c.Faltan80 <= 2 && c.Faltan80 > 0 && <div style={{ fontSize: 10, color: 'var(--orange)', marginTop: 2 }}>âš¡ {c.Faltan80} SKU{c.Faltan80>1?'s':''} para TP</div>}
+                      {c.Faltan80 <= 2 && c.Faltan80 > 0 && <div style={{ fontSize: 10, color: 'var(--orange)', marginTop: 2 }}>⚡ {c.Faltan80} SKU{c.Faltan80>1?'s':''} para TP</div>}
                     </div>
                     <div style={{ color: 'var(--text-2)', fontSize: 12, display: 'flex', alignItems: 'center', gap: 4 }}>
                       <MapPin size={10} color="var(--text-4)"/>{c.Localidad}
@@ -293,12 +293,12 @@ export default function VendedorDashboard({ clientes, focos, pdf, vendedorId, ve
                       <PctBar pct={c.PortafolioPct} color={band.color}/>
                     </div>
                     <div className="mono" style={{ textAlign:'center', color: c.Faltan80===0?'var(--text-4)':'var(--text-2)', fontSize: 13 }}>
-                      {c.Faltan80===0?'â€”':c.Faltan80}
+                      {c.Faltan80===0?'—':c.Faltan80}
                     </div>
                     <div style={{ textAlign:'center' }}>
                       {c.TP_Sistema === 'SI'
                         ? <span style={{ display:'inline-flex', alignItems:'center', gap:3, color:'var(--green)', fontSize:11, fontWeight:600 }}><Check size={11} strokeWidth={2.6}/></span>
-                        : <span style={{ color:'var(--text-4)', fontSize:11 }}>â€”</span>}
+                        : <span style={{ color:'var(--text-4)', fontSize:11 }}>—</span>}
                     </div>
                   </div>
                   {(skus80.length > 0 || skus100.length > 0) && (
@@ -356,8 +356,8 @@ export default function VendedorDashboard({ clientes, focos, pdf, vendedorId, ve
 
         {/* Footer */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 28px', borderTop: '1px solid var(--line)', fontSize: 11, color: 'var(--text-4)', flexShrink: 0 }}>
-          <span>Orbit Â© 2026 Â· Plataforma propietaria de Torres MatÃ­as.</span>
-          <span className="mono" style={{ fontSize: 10 }}>{vendedorName} Â· Zona {dia} Â· {fecha}</span>
+          <span>Orbit © 2026 · Plataforma propietaria de Torres Matías.</span>
+          <span className="mono" style={{ fontSize: 10 }}>{vendedorName} · Zona {dia} · {fecha}</span>
         </div>
       </main>
     </div>

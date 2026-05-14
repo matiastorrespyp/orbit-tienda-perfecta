@@ -457,14 +457,14 @@ export default function GerenciaDashboard({ clientes, focos, pdfs, vendorNames, 
                     <div style={{ fontSize: 10.5, color: 'var(--text-3)', letterSpacing: 1.5, textTransform: 'uppercase', fontWeight: 600, marginBottom: 4 }}>Performance zona</div>
                     <div style={{ fontSize: 16, fontWeight: 600 }}>Por vendedor</div>
                   </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '36px 1.2fr 90px 60px 70px 60px 48px', gap: 8, padding: '8px 22px', fontSize: 10.5, color: 'var(--text-3)', letterSpacing: 1.2, textTransform: 'uppercase', fontWeight: 600 }}>
-                    <div>#</div><div>Vendedor</div><div>Portafolio</div><div style={{ textAlign:'center' }}>Clientes posibilidad</div>
-                    <div style={{ textAlign:'center' }}>TP activos</div><div style={{ textAlign:'center' }}>Urg.</div><div></div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '36px 1.2fr 90px 100px 80px 60px 48px', gap: 8, padding: '8px 22px', fontSize: 10.5, color: 'var(--text-3)', letterSpacing: 1.2, textTransform: 'uppercase', fontWeight: 600 }}>
+                    <div>#</div><div>Vendedor</div><div>Portafolio</div><div style={{ textAlign:'center', whiteSpace:'normal', lineHeight:1.3 }}>Clientes posibilidad</div>
+                    <div style={{ textAlign:'center', whiteSpace:'normal', lineHeight:1.3 }}>TP activos</div><div style={{ textAlign:'center' }}>Urg.</div><div></div>
                   </div>
                   {byVendor.map((v, i) => {
                     const color = v.avg >= 75 ? '#6EC531' : v.avg >= 65 ? '#F0C000' : '#E87A00';
                     return (
-                      <div key={v.v} className="row-hover" style={{ display: 'grid', gridTemplateColumns: '36px 1.2fr 90px 60px 70px 60px 48px', gap: 8, padding: '12px 22px', alignItems: 'center', borderBottom: '1px solid var(--line)' }}>
+                      <div key={v.v} className="row-hover" style={{ display: 'grid', gridTemplateColumns: '36px 1.2fr 90px 100px 80px 60px 48px', gap: 8, padding: '12px 22px', alignItems: 'center', borderBottom: '1px solid var(--line)' }}>
                         <div className="mono" style={{ fontSize: 11, color: 'var(--text-3)' }}>{String(i+1).padStart(2,'0')}</div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                           <div style={{ width: 28, height: 28, borderRadius: 7, background: `${color}20`, border: `1px solid ${color}40`, color, display: 'grid', placeItems: 'center', fontSize: 10, fontWeight: 700 }}>
