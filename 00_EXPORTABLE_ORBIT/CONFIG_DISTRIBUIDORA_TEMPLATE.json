@@ -1,0 +1,95 @@
+{
+  "_instrucciones": "Completar todos los campos marcados con TODO antes de correr setup_distribuidora.py o el pipeline. No subir este archivo a GitHub con datos reales.",
+
+  "distribuidora": {
+    "nombre": "TODO: Nombre completo de la distribuidora",
+    "nombre_corto": "TODO: Sigla o nombre corto (ej. PyP, ABC, etc.)",
+    "ciudad": "TODO: Ciudad principal de operación",
+    "provincia": "TODO: Provincia",
+    "pais": "Argentina",
+    "logo_path": "assets/logo_distrib.png",
+    "_nota_logo": "PNG fondo transparente, 200x60px recomendado. Reemplazar el archivo en assets/."
+  },
+
+  "vendedores": {
+    "_nota": "Un entry por vendedor activo. El ID debe coincidir EXACTAMENTE con los IDs en ventas.csv y gescom.xlsx.",
+    "lista": [
+      { "id": "TODO: número entero", "nombre": "TODO: nombre completo", "zona_principal": "TODO: LU|MA|MI|JU|VI|SA" },
+      { "id": "TODO: número entero", "nombre": "TODO: nombre completo", "zona_principal": "TODO: LU|MA|MI|JU|VI|SA" },
+      { "id": "TODO: número entero", "nombre": "TODO: nombre completo", "zona_principal": "TODO: LU|MA|MI|JU|VI|SA" }
+    ]
+  },
+
+  "zonas": {
+    "_nota": "Indicar qué zonas están activas. Solo las que tienen actividad regular.",
+    "activas": ["TODO: LU|MA|MI|JU|VI|SA", "TODO: LU|MA|MI|JU|VI|SA"]
+  },
+
+  "inputs": {
+    "_nota": "Rutas relativas desde la raíz del proyecto. Deben existir antes de correr el pipeline.",
+    "ventas_csv": "inputs/ventas.csv",
+    "gescom_xlsx": "inputs/gescom.xlsx",
+    "portafolio_pptx": "inputs/Portafolio Infaltable - Argentina.pptx",
+    "lista_precios_xlsx": "inputs/lista_precios.xlsx",
+    "objetivo_vendedor_xlsx": "inputs/objetivo_vendedor_tp.xlsx"
+  },
+
+  "google": {
+    "_nota": "IDs obtenidos de las URLs de Google Sheets y Drive.",
+    "spreadsheet_id": "TODO: ID del Google Spreadsheet (de la URL)",
+    "drive_root_folder_id": "TODO: ID de la carpeta raíz en Drive (opcional, referencia)",
+    "drive_pdf_gerencial_folder_id": "TODO: ID de la carpeta Drive para PDFs gerenciales",
+    "drive_pdf_vendedores_folder_id": "TODO: ID de la carpeta Drive para PDFs de vendedores",
+    "auth_mode": "oauth_user",
+    "oauth_client_secrets_json": "credenciales/google-oauth-client.json",
+    "oauth_token_json": "credenciales/google-oauth-token.json",
+    "_nota_service_account": "El JSON de Service Account va en la variable de entorno GOOGLE_SERVICE_ACCOUNT_JSON en Render. No se guarda en este archivo."
+  },
+
+  "portal": {
+    "_nota": "Contraseñas del portal web. Deben definirse también como variables de entorno en Render.",
+    "mgmt_password": "TODO: contraseña para acceso de gerencia (mínimo 8 caracteres)",
+    "vendor_password": "TODO: contraseña para acceso de vendedores (mínimo 8 caracteres)",
+    "_nota_vendor_names": "Se genera automáticamente desde la sección vendedores.lista al correr setup_distribuidora.py"
+  },
+
+  "render": {
+    "_nota": "Datos del Web Service en Render. Completar después del deploy.",
+    "service_name": "TODO: orbit-tp-[nombre_corto_en_minusculas]",
+    "url_publica": "TODO: https://orbit-tp-[nombre].onrender.com",
+    "region": "oregon",
+    "plan": "TODO: free|starter",
+    "github_repo": "TODO: usuario/nombre-repo",
+    "github_branch": "main",
+    "root_directory": "portal",
+    "build_command": "npm install && npm run build",
+    "start_command": "node dist/server/entry.mjs"
+  },
+
+  "outputs": {
+    "_nota": "Rutas de salida. Generalmente no hay que cambiarlas.",
+    "pdf_vendedores_dir": "output/PDF_VENDEDORES",
+    "pdf_gerencial_dir": "output/PDF_GERENCIAL",
+    "appsheet_csv_dir": "output/APPSHEET",
+    "excel_out": "output/Control_TP_Portafolio_[NOMBRE_CORTO].xlsx"
+  },
+
+  "taxonomia": {
+    "_nota": "Clasificación de clientes. Generalmente no cambia entre distribuidoras.",
+    "valores": ["P", "A", "B", "C"],
+    "descripcion": {
+      "P": "Premium — clientes estratégicos máxima prioridad",
+      "A": "Alto valor — clientes con alto potencial",
+      "B": "Base — clientes estándar",
+      "C": "Chico — clientes de bajo volumen o frecuencia"
+    }
+  },
+
+  "operacion": {
+    "horario_ejecucion_bat": "TODO: ej. 06:00-08:00 antes de salida de vendedores",
+    "responsable_diario": "TODO: nombre de la persona que corre el BAT cada día",
+    "contacto_soporte": "matiastorres.pyp@gmail.com",
+    "fecha_go_live": "TODO: YYYY-MM-DD",
+    "notas": ""
+  }
+}
