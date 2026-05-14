@@ -557,10 +557,19 @@ export default function GerenciaDashboard({ clientes, focos, pdfs, vendorNames, 
                 {clientesSorted.map((c, i) => {
                   const band = pctBand(c.PortafolioPct);
                   return (
-                    <div key={i} className="row-hover" style={{ display: 'grid', gridTemplateColumns: '1.6fr 1fr 0.9fr 110px 70px 60px', gap: 10, padding: '11px 22px', alignItems: 'center', borderBottom: '1px solid var(--line)', fontSize: 12.5, minWidth: 700 }}>
+                    <div key={i} className="row-hover" style={{ display: 'grid', gridTemplateColumns: '1.6fr 1fr 0.9fr 110px 70px 60px', gap: 10, padding: '11px 22px', alignItems: 'start', borderBottom: '1px solid var(--line)', fontSize: 12.5, minWidth: 700 }}>
                       <div style={{ minWidth: 0 }}>
                         <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: 500 }}>{c.RazonSocial}</div>
                         {c.Faltan80 <= 2 && c.Faltan80 > 0 && <div style={{ fontSize: 10, color: 'var(--orange)', marginTop: 2 }}>⚡ A {c.Faltan80} SKU{c.Faltan80>1?'s':''} del TP</div>}
+                        {c.SKUsFaltan80 && (
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 5 }}>
+                            {c.SKUsFaltan80.split('|').map((sku, idx) => (
+                              <span key={idx} style={{ fontSize: 10, background: 'rgba(255,255,255,0.05)', border: '1px solid var(--line)', borderRadius: 4, padding: '1px 6px', color: 'var(--text-3)', whiteSpace: 'nowrap' }}>
+                                {sku.trim()}
+                              </span>
+                            ))}
+                          </div>
+                        )}
                       </div>
                       <div style={{ color: 'var(--text-2)' }}>
                         <a href={`/vendedor?id=${c.VendedorID}`} style={{ color: 'var(--text-2)', textDecoration: 'none' }}
