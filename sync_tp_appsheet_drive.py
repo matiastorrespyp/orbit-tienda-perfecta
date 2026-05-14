@@ -26,6 +26,11 @@ CSV_TO_SHEET = {
     "foco_productos.csv": "foco_productos",
 }
 
+# CSVs que se escriben desde A1 (sin fórmula de ID en columna A)
+CSV_TO_SHEET_FULL = {
+    "tp_objetivos_resumen.csv": "tp_objetivos_resumen",
+}
+
 
 def script_dir() -> Path:
     return Path(__file__).resolve().parent
@@ -87,6 +92,32 @@ def clear_sheet_data_keep_id_formula(sheets_service, spreadsheet_id: str, sheet_
         spreadsheetId=spreadsheet_id,
         range=f"{sheet_name}!B:ZZ",
         body={},
+    ).execute()
+
+
+def write_csv_to_sheet_full(sheets_service, spreadsheet_id: str, sheet_name: str, csv_path: Path) -> None:
+    """Full overwrite desde A1, sin preservar columna A (para hojas sin fórmula de ID).
+    Crea la hoja si no existe."""
+    rows = read_csv_rows(csv_path)
+    meta = sheets_service.spreadsheets().get(spreadsheetId=spreadsheet_id).execute()
+    existing = {s["properties"]["title"] for s in meta["sheets"]}
+    if sheet_name not in existing:
+        sheets_service.spreadsheets().batchUpdate(
+            spreadsheetId=spreadsheet_id,
+            body={"requests": [{"addSheet": {"properties": {"title": sheet_name}}}]},
+        ).execute()
+    sheets_service.spreadsheets().values().clear(
+        spreadsheetId=spreadsheet_id,
+        range=sheet_name,
+        body={},
+    ).execute()
+    if not rows:
+        return
+    sheets_service.spreadsheets().values().update(
+        spreadsheetId=spreadsheet_id,
+        range=f"{sheet_name}!A1",
+        valueInputOption="RAW",
+        body={"values": rows},
     ).execute()
 
 
@@ -202,6 +233,14 @@ def main():
         if not csv_path.exists():
             raise FileNotFoundError(f"No existe {csv_path}")
         write_csv_to_sheet(sheets_service, spreadsheet_id, sheet_name, csv_path)
+
+    for csv_name, sheet_name in CSV_TO_SHEET_FULL.items():
+        csv_path = csv_dir / csv_name
+        if csv_path.exists():
+            write_csv_to_sheet_full(sheets_service, spreadsheet_id, sheet_name, csv_path)
+            print(f"  {sheet_name}: subido desde A1")
+        else:
+            print(f"  AVISO: {csv_name} no encontrado, saltando.")
 
     print("OK: Google Sheets actualizado")
 
