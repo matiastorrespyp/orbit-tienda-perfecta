@@ -1870,7 +1870,7 @@ def export_pdf_gerencial(g, snap, delta_prev_run, delta_prev_day, dia_code, out_
 # ============================================================
 def export_appsheet_csvs(g: pd.DataFrame, dia_code: str, base_out_dir: str,
                          pdf_vend_paths=None, pdf_ger_path: str = "",
-                         generated_ts: str = ""):
+                         generated_ts: str = "", obj_bundle=None):
     pdf_vend_paths = pdf_vend_paths or []
     generated_ts = generated_ts or datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     today_str = date.today().isoformat()
@@ -2028,6 +2028,72 @@ def export_appsheet_csvs(g: pd.DataFrame, dia_code: str, base_out_dir: str,
             })
 
     pd.DataFrame(focus_rows).to_csv(os.path.join(appsheet_dir, "foco_productos.csv"), index=False, encoding="utf-8-sig")
+
+    # ----------------------------
+    # 4) tp_objetivos_resumen.csv
+    # ----------------------------
+    if obj_bundle and obj_bundle.get("loaded"):
+        obj_rows = []
+        summ = obj_bundle.get("summary_total") or {}
+        if summ:
+            obj_rows.append({
+                "Scope": "general",
+                "VendedorID": "",
+                "VendedorNombre": "General",
+                "Zona": dia_code,
+                "Fecha": today_str,
+                "Objetivo": round(float(summ.get("objetivo", 0) or 0), 4),
+                "Acumulado": int(summ.get("acumulado", 0) or 0),
+                "RealDia": int(summ.get("real_dia", 0) or 0),
+                "Faltante": round(float(summ.get("faltante", 0) or 0), 4),
+                "CumplimientoPct": round(float(summ.get("cumplimiento_pct", 0) or 0), 2),
+            })
+        vend_df = obj_bundle.get("vend_df")
+        if vend_df is not None and not vend_df.empty:
+            for _, r in vend_df.iterrows():
+                raw_vid = str(r.get("_VEND_ID_TXT", "") or "").strip()
+                if not raw_vid:
+                    continue
+                try:
+                    vid = str(int(float(raw_vid)))
+                except (ValueError, TypeError):
+                    vid = raw_vid
+                vname = vendor_display_name(vid, str(r.get("_VEND_LABEL", "") or ""))
+                obj_rows.append({
+                    "Scope": "vendedor",
+                    "VendedorID": vid,
+                    "VendedorNombre": vname,
+                    "Zona": dia_code,
+                    "Fecha": today_str,
+                    "Objetivo": round(float(r.get("OBJETIVO", 0) or 0), 4),
+                    "Acumulado": int(r.get("ACUMULADO", 0) or 0),
+                    "RealDia": int(r.get("REAL_DIA", 0) or 0),
+                    "Faltante": round(float(r.get("FALTANTE", 0) or 0), 4),
+                    "CumplimientoPct": round(float(r.get("CUMPLIMIENTO_PCT", 0) or 0), 2),
+                })
+        tax_df = obj_bundle.get("tax_df")
+        if tax_df is not None and not tax_df.empty:
+            for _, r in tax_df.iterrows():
+                tax_name = norm_text(r.get("TAXONOMIA", ""))
+                if not tax_name:
+                    continue
+                obj_rows.append({
+                    "Scope": "taxonomia",
+                    "VendedorID": "",
+                    "VendedorNombre": tax_name,
+                    "Zona": dia_code,
+                    "Fecha": today_str,
+                    "Objetivo": round(float(r.get("OBJETIVO", 0) or 0), 4),
+                    "Acumulado": int(r.get("ACUMULADO", 0) or 0),
+                    "RealDia": int(r.get("REAL_DIA", 0) or 0),
+                    "Faltante": round(float(r.get("FALTANTE", 0) or 0), 4),
+                    "CumplimientoPct": round(float(r.get("CUMPLIMIENTO_PCT", 0) or 0), 2),
+                })
+        pd.DataFrame(obj_rows).to_csv(
+            os.path.join(appsheet_dir, "tp_objetivos_resumen.csv"),
+            index=False, encoding="utf-8-sig",
+        )
+
     print(f"[APPSHEET] CSVs -> {appsheet_dir}")
 
 # ============================================================
@@ -2156,6 +2222,7 @@ def main():
         pdf_vend_paths=created,
         pdf_ger_path=pdf_ger,
         generated_ts=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        obj_bundle=obj_bundle,
     )
 
     # xlsx control
