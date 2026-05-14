@@ -282,8 +282,9 @@ export default function GerenciaDashboard({ clientes, focos, pdfs, vendorNames, 
 
               {/* Objetivos TP del mes */}
               {(() => {
-                const gen   = objetivos.find(o => o.Scope === 'general');
-                const vends = objetivos.filter(o => o.Scope === 'vendedor');
+                const gen      = objetivos.find(o => o.Scope === 'general');
+                const vends    = objetivos.filter(o => o.Scope === 'vendedor');
+                const taxRows  = objetivos.filter(o => o.Scope === 'taxonomia');
                 if (!gen) return null;
                 const cc = (p: number) => p >= 80 ? 'var(--green)' : p >= 50 ? 'var(--yellow)' : 'var(--orange)';
                 return (
@@ -315,6 +316,23 @@ export default function GerenciaDashboard({ clientes, focos, pdfs, vendorNames, 
                         </div>
                       ))}
                     </div>
+                    {taxRows.length > 0 && (
+                      <>
+                        <div style={{ display: 'grid', gridTemplateColumns: '60px 90px 80px 80px 80px 90px', gap: 8, padding: '8px 22px', fontSize: 10.5, color: 'var(--text-3)', letterSpacing: 1.2, textTransform: 'uppercase', fontWeight: 600, borderBottom: '1px solid var(--line)' }}>
+                          <div>Tax.</div><div style={{ textAlign:'right' }}>Objetivo</div><div style={{ textAlign:'right' }}>Acum.</div><div style={{ textAlign:'right' }}>Real día</div><div style={{ textAlign:'right' }}>Faltan</div><div style={{ textAlign:'right' }}>Cumpl. %</div>
+                        </div>
+                        {taxRows.map(t => (
+                          <div key={t.VendedorNombre} className="row-hover" style={{ display: 'grid', gridTemplateColumns: '60px 90px 80px 80px 80px 90px', gap: 8, padding: '10px 22px', alignItems: 'center', borderBottom: '1px solid var(--line)', fontSize: 12.5 }}>
+                            <div style={{ fontWeight: 600 }}>{t.VendedorNombre}</div>
+                            <div className="mono" style={{ textAlign:'right', color: 'var(--text-2)' }}>{t.Objetivo.toFixed(0)}</div>
+                            <div className="mono" style={{ textAlign:'right', color: 'var(--text-2)' }}>{t.Acumulado}</div>
+                            <div className="mono" style={{ textAlign:'right', color: 'var(--text-2)' }}>{t.RealDia}</div>
+                            <div className="mono" style={{ textAlign:'right', color: 'var(--text-2)' }}>{t.Faltante.toFixed(0)}</div>
+                            <div className="mono" style={{ textAlign:'right', fontWeight: 600, color: cc(t.CumplimientoPct) }}>{t.CumplimientoPct.toFixed(1)}%</div>
+                          </div>
+                        ))}
+                      </>
+                    )}
                     {vends.length > 0 && (
                       <>
                         <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 90px 80px 80px 90px', gap: 8, padding: '8px 22px', fontSize: 10.5, color: 'var(--text-3)', letterSpacing: 1.2, textTransform: 'uppercase', fontWeight: 600, borderBottom: '1px solid var(--line)' }}>
