@@ -457,8 +457,8 @@ export default function GerenciaDashboard({ clientes, focos, pdfs, vendorNames, 
                     <div style={{ fontSize: 16, fontWeight: 600 }}>Por vendedor</div>
                   </div>
                   <div style={{ display: 'grid', gridTemplateColumns: '36px 1.2fr 90px 60px 70px 60px 48px', gap: 8, padding: '8px 22px', fontSize: 10.5, color: 'var(--text-3)', letterSpacing: 1.2, textTransform: 'uppercase', fontWeight: 600 }}>
-                    <div>#</div><div>Vendedor</div><div>Portafolio</div><div style={{ textAlign:'center' }}>En zona</div>
-                    <div style={{ textAlign:'center' }}>Con TP</div><div style={{ textAlign:'center' }}>Urg.</div><div></div>
+                    <div>#</div><div>Vendedor</div><div>Portafolio</div><div style={{ textAlign:'center' }}>Clientes posibilidad</div>
+                    <div style={{ textAlign:'center' }}>TP activos</div><div style={{ textAlign:'center' }}>Urg.</div><div></div>
                   </div>
                   {byVendor.map((v, i) => {
                     const color = v.avg >= 75 ? '#6EC531' : v.avg >= 65 ? '#F0C000' : '#E87A00';
